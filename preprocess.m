@@ -73,6 +73,39 @@ function preprocess()
             % make sure preExptTrials were actually collected before
             % analyzing
             if(isfolder(preExptPath)) 
+                % load metadata file for cell 
+                metaDatFilePath = [cellPath filesep 'metaDat.mat'];
+                load(metaDatFilePath, 'exptInfo', 'flyData', 'settings');
+                
+                % if the file exists, preprocess cellAttached trial
+                cellAttMatPath = ...
+                    [preExptPath filesep 'cellAttachedTrial.mat'];
+                if(isfile(cellAttMatPath))
+                    % load data
+                    load(cellAttMatPath, 'inputParams', 'rawData', ...
+                        'rawOutput');
+                    % preprocess DAQ
+                    [daqData, daqOutput, daqTime] = preprocessUserDaq(...
+                        inputParams, rawData, rawOutput, settings);
+                    % preprocess ephys
+                    [ephysData, ephysMeta] = preprocessEphysData(...
+                        daqData, daqOutput, daqTime, inputParams, settings);
+                    
+                    % if there's behavioral data, preprocess that
+                    % FicTrac
+                    if(contains(inputParams.exptCond, 'Fictrac'))
+                        fictrac = preprocessFicTrac(daqData, daqTime, ...
+                            settings.bob.sampRate);
+                    end
+                    % leg video
+                    if(contains(inputParams.exptCond, 'leg'))
+                        leg = preprocessLegVid(daqData, daqOutput, daqTime);
+                    end
+                    
+                end
+                
+                
+                
                 
             end
             
