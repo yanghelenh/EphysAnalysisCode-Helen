@@ -77,9 +77,14 @@ function preprocess()
                 metaDatFilePath = [cellPath filesep 'metaDat.mat'];
                 load(metaDatFilePath, 'exptInfo', 'flyData', 'settings');
                 
-                % if the file exists, preprocess cellAttached trial
+                % load pre-experimental data for cell
+                preExptDataPath = [cellPath filesep 'preExptData.mat'];
+                load(preExptDataPath, 'preExptData');
+                
                 cellAttMatPath = ...
                     [preExptPath filesep 'cellAttachedTrial.mat'];
+                
+                % if the file exists, preprocess cellAttached trial
                 if(isfile(cellAttMatPath))
                     % load data
                     load(cellAttMatPath, 'inputParams', 'rawData', ...
@@ -101,6 +106,8 @@ function preprocess()
                     if(contains(inputParams.exptCond, 'leg'))
                         leg = preprocessLegVid(daqData, daqOutput, daqTime);
                     end
+                    
+                    % update metadata spreadsheet
                     
                 end
                 
