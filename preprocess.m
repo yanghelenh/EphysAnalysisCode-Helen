@@ -31,8 +31,9 @@
 % Adaptation of preprocess.m from 2PAnalysisCode-Helen
 %
 % CREATED: 9/3/20 - HHY
+%
 % UPDATED: 
-%   9/3/20 - HHY
+%   9/10/20 - HHY
 %
 function preprocess()
 
@@ -51,7 +52,6 @@ function preprocess()
     curDir = pwd;
     cd(datePath);
     
-    
     % get all fly folders in date directory    
     flyFolders = dir([datePath filesep 'fly*']);
 
@@ -66,17 +66,17 @@ function preprocess()
         for j = 1:length(cellFolders)
             cellPath = [flyPath filesep cellFolders(j).name];
             
+            % load metadata file for cell 
+            metaDatFilePath = [cellPath filesep 'metaDat.mat'];
+            load(metaDatFilePath, 'exptInfo', 'flyData', 'settings');
+                
             % preprocess preExptTrials: load in ephys metadata about
             %  recording, preprocess cellAttached trial
             preExptPath = [cellPath filesep 'preExptTrials'];
             
             % make sure preExptTrials were actually collected before
             % analyzing
-            if(isfolder(preExptPath)) 
-                % load metadata file for cell 
-                metaDatFilePath = [cellPath filesep 'metaDat.mat'];
-                load(metaDatFilePath, 'exptInfo', 'flyData', 'settings');
-                
+            if(isfolder(preExptPath))    
                 % load pre-experimental data for cell
                 preExptDataPath = [cellPath filesep 'preExptData.mat'];
                 load(preExptDataPath, 'preExptData');
@@ -86,113 +86,134 @@ function preprocess()
                 
                 % if the file exists, preprocess cellAttached trial
                 if(isfile(cellAttMatPath))
+                    disp('Preprocessing cell attached trial');
+                                        
                     % load data
                     load(cellAttMatPath, 'inputParams', 'rawData', ...
                         'rawOutput');
+                    
                     % preprocess DAQ
                     [daqData, daqOutput, daqTime] = preprocessUserDaq(...
                         inputParams, rawData, rawOutput, settings);
+                    
                     % preprocess ephys
                     [ephysData, ephysMeta] = preprocessEphysData(...
                         daqData, daqOutput, daqTime, inputParams, settings);
                     
                     % if there's behavioral data, preprocess that
                     % FicTrac
-                    if(contains(inputParams.exptCond, 'Fictrac'))
+                    if(contains(inputParams.exptCond, 'Fictrac',...
+                            'IgnoreCase', true))
                         fictrac = preprocessFicTrac(daqData, daqTime, ...
                             settings.bob.sampRate);
+                    else % so writePData() has input
+                        fictrac = [];
                     end
+                    
                     % leg video
-                    if(contains(inputParams.exptCond, 'leg'))
+                    if(contains(inputParams.exptCond, 'leg', ...
+                            'IgnoreCase', true))
                         leg = preprocessLegVid(daqData, daqOutput, daqTime);
+                    else % so writePData() has input
+                        leg = [];
                     end
                     
                     % update metadata spreadsheet
+                    updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
+                        flyData, inputParams, 'cellAttachedTrial', ...
+                        preExptData);
                     
+                    % save pData
+                    writePData(pDataDir(), settings, exptInfo, ...
+                        preExptData, inputParams, ephysData, ephysMeta,...
+                        fictrac, leg, 'cellAttachedTrial'); 
+                    
+                    % clear variables specific to this trial
+                    clearvars inputParams rawData rawOutput
+                    clearvars ephysData ephysMeta fictrac leg
                 end
-                
-                
-                
-                
+            % if there's no preExpt data  (9/8/20 - not currently possible 
+            %  if there are additional trials recorded properly, but handle
+            %  in case recording done incorrectly or for future
+            %  behavior-only experiments
+            % updateMetadataSprdsht and writePData need preExptData input,
+            %  but handle empty vector correctly
+            else
+                preExptData = [];
             end
             
+            % get all trial files in cell folder
+            trialFiles = dir([cellPath filesep 'trial*']);
             
-            % get all trial folders in cell folder
-            trialFolders = dir([cellPath filesep 'trial*']);
-            
-            % loop through trial folders in FOV folder
-            for k = 1:length(trialFolders)
-                trialPath = [cellPath filesep trialFolders(k).name];
-                exptName = [dateFolder '_' flyFolders(i).name '_' ...
-                    cellFolders(j).name '_' trialFolders(k).name];
-                cd (trialPath)
+            % loop through trials in cell folder
+            for k = 1:length(trialFolder)
+                trialPath = [cellFolder filesep trialFiles(k).name];
                 
-                % load data from experimental DAQ, metadata
-                try
-                    load([trialPath filesep 'userDaqDat.mat']);
-                catch mExcep
-                    % if there is no userDaqDat.mat file
-                    if(strcmp(mExcep.identifier, ...
-                            'MATLAB:load:couldNotReadFile'))
-                        fprintf(['Error: no userDaqDat.mat file found '...
-                            'for \n %s \n Skipping processing'], ... 
-                            trialPath);
-                        continue; % skips processing of this trial
-                    % other errors, throw and stop preprocess completely    
-                    else 
-                        rethrow(ME); 
-                    end
-                end
+                % name of trial, without .mat suffix
+                trialName = trialFiles(k).name;
+                periodInd = strfind(trialName,'.');
+                trialName = trialName(1:(periodInd-1));
                 
-                % display updates in command line
-                fprintf('Preprocessing %s \n', trialPath);
+                % load trial 
+                load(trialPath, 'inputParams', 'rawData', 'rawOutput');
                 
-                % process metadata from userDaqDat.mat
-                [daqData, daqOutput, daqTime, settings] = ...
-                    preprocessUserDaq(exptCond, flyData, inputParams, ...
-                    rawData, rawOutput, settings, sprdshtFullPath,...
-                    exptName);
+                fprintf('\nPreprocessing %s\n', trialFiles(k).name);
                 
-                
-                % if this experiment has imaging data
-                if (contains(exptCond, 'Img'))
-                    % name of ScanImage Tiff
-                    tifFile = dir([trialPath filesep 'f*.tif']);
+                % preprocess DAQ
+                [daqData, daqOutput, daqTime] = preprocessUserDaq(...
+                    inputParams, rawData, rawOutput, settings);
 
-                    % only if imaging data exists
-                    if ~isempty(tifFile)
-                        disp('Preprocessing imaging data');
-                        % align imaging data, save that and metadata in
-                        %  trialPath
-                        preprocessImaging(tifFile, daqData, daqTime);
-%                         preprocessImaging2Ch(tifFile, daqData, daqTime);
-                    else
-                        fprintf(['Warning: Imaging data expected, but '
-                            'no .tif file found for:\n %s \n'], trialPath);
-                    end
+                % if there's ephys data, preprocess that
+                if(contains(inputParams.exptCond, 'ephys', 'IgnoreCase',...
+                        true))
+                    [ephysData, ephysMeta] = preprocessEphysData(...
+                        daqData, daqOutput, daqTime, inputParams, ...
+                        settings);
+                else % so writePData() has input
+                    ephysData = [];
+                    ephysMeta = [];
                 end
-                
-                % if this experiment has FicTrac data
-                if (contains(exptCond, 'Fictrac'))
-                    % Process FicTrac data
-                    disp('Preprocessing FicTrac data');
-                    preprocessFicTrac(daqData, daqTime, ...
+
+                % if there's behavioral data, preprocess that
+                % FicTrac
+                if(contains(inputParams.exptCond, 'Fictrac', ...
+                        'IgnoreCase', true))
+                    fictrac = preprocessFicTrac(daqData, daqTime, ...
                         settings.bob.sampRate);
+                else % so writePData() has input
+                    fictrac = [];
                 end
-                
-                % if this experiment has leg tracking data
-                if (contains(exptCond, 'leg'))
-                    % Process leg data
-                    disp('Preprocessing leg video data');
-                    preprocessLegVid(daqData, daqOutput, daqTime);  
+
+                % leg video
+                if(contains(inputParams.exptCond, 'leg', 'IgnoreCase',...
+                        true))
+                    leg = preprocessLegVid(daqData, daqOutput, daqTime);
+                else % so writePData() has input
+                    leg = [];
                 end
-                
-                % display updates in command line
-                fprintf('Done preprocessing %s \n', trialPath);
+
+                % update metadata spreadsheet
+                updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
+                    flyData, inputParams, trialName, ...
+                    preExptData);
+
+                % save pData
+                writePData(pDataDir(), settings, exptInfo, ...
+                    preExptData, inputParams, ephysData, ephysMeta,...
+                    fictrac, leg, trialName);  
                 
             end
+            
+            % update display with what's happening; which cell done
+            fprintf('Done preprocessing %s\n', cellFolders(j).name);
         end
+        
+        % update display with what's happening; which fly done
+        fprintf('Done preprocessing %s\n', flyFolders(i).name);
     end
+    
+    % update display with what's happening; date folder done
+    fprintf('Done preprocessing %s\n', dateFolder);
     
     cd(curDir);
 end

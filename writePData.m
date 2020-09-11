@@ -31,7 +31,6 @@
 % CREATED: 9/6/20 - HHY
 %
 % UPDATED:
-%   9/6/20 - HHY
 %   9/8/20 - HHY
 %
 function writePData(pDataDir, settings, exptInfo, preExptData, ...
@@ -81,5 +80,6 @@ function writePData(pDataDir, settings, exptInfo, preExptData, ...
                 'preExptData', 'fictrac', 'leg', 'settings', ...
                 'inputParams', '-v7.3');
     end
-
+    
+    fprintf('\nSaved %s\n', trialName);
 end
