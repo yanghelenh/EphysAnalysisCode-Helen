@@ -36,16 +36,16 @@ function startInd = detectSpikes(voltage, t, dvdtThresh, refractoryPeriod)
     refrPrdSamp = refractoryPeriod / isi;
     
     % find first derivative of voltage
-    dvdt = diff(voltage) ./ diff(t);
+    dvdt = gradient(voltage) ./ gradient(t);
     
     % find when first derivative of voltage exceeds threshold
     abvThresh = dvdt > dvdtThresh;
     
 	% find indicies for when these threshold crossings occur
-    spikeStartInd = find(diff(abvThresh) == 1); % 1st to exceed thresh
+    spikeStartInd = find(gradient(abvThresh) == 1); % 1st to exceed thresh
     
-    % correct for taking difference
-    spikeStartInd = spikeStartInd + 1;
+%     % correct for taking difference
+%     spikeStartInd = spikeStartInd;
     
     % correct for if there are threshold crossings too close together
     %  (within refractory period)
