@@ -24,6 +24,7 @@
 %   2/26/20 - HHY
 %   9/6/20 - HHY - updated to preprocess external commands (voltage or
 %       current injection)
+%   9/13/20 - HHY - fixed bug in processing external commands
 %
 
 function [ephysData, ephysMeta] = preprocessEphysData(daqData, ...
@@ -50,7 +51,7 @@ function [ephysData, ephysMeta] = preprocessEphysData(daqData, ...
             ephysData.scaledCurrent = ephysMeta.softGain .* ...
                 daqData.ampScaledOut;
             % if there's a external voltage command
-            if(isfield(daqOutput.ampExtCmdIn))
+            if(isfield(daqOutput, 'ampExtCmdIn'))
                 % external command is voltage, in mV
                 ephysData.vCmd = settings.VOut.zeroV + ...
                     (daqOutput.ampExtCmdIn ./ settings.VOut.VConvFactor);
@@ -63,7 +64,7 @@ function [ephysData, ephysMeta] = preprocessEphysData(daqData, ...
             ephysData.scaledVoltage = ephysMeta.softGain .* ...
                 daqData.ampScaledOut;     
             % if there's a external voltage command
-            if(isfield(daqOutput.ampExtCmdIn))
+            if(isfield(daqOutput, 'ampExtCmdIn'))
                 % external command is current, in pA
                 ephysData.iInj = settings.VOut.zeroI + ...
                     (daqOutput.ampExtCmdIn ./ settings.VOut.IConvFactor);
