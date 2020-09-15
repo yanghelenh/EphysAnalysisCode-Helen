@@ -31,6 +31,7 @@
 %   9/6/20 - HHY
 %   9/8/20 - HHY - update to correct issue with exptCond for
 %       legFictracEphysIInj prior to 9/8/20
+%   9/15/20 - HHY - fix bug in reading from Table
 %   
 function updateMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
     inputParams, trialName, preExptData)
@@ -52,11 +53,13 @@ function updateMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
     if(numSsRows == 1) % spreadsheet empty except for header
         thisFlyID = 1;
     else
+        sprdshtCol4Arry = table2array(sprdshtCol4);
         % get flyID of last entry in spreadsheet
-        lastFlyID = sprdshtCol4(end);
+        lastFlyID = sprdshtCol4Arry(end);
         
+        sprdshtCol1Arry = table2array(sprdshtCol1);
         % get experiment name for last entry in spreadsheet
-        lastExptName = sprdshtCol1(end);
+        lastExptName = sprdshtCol1Arry{end};
         
         % this fly's date and fly number
         dateFlyNum = [flyData.dateDir '_' flyData.flyDir];

@@ -34,6 +34,8 @@
 %
 % UPDATED: 
 %   9/10/20 - HHY
+%   9/15/20 - HHY - fix bugs in handling cellAttachedTrial from prior to
+%       change in preExperimentalRoutine (7/16/20)
 %
 function preprocess()
 
@@ -87,54 +89,102 @@ function preprocess()
                 % if the file exists, preprocess cellAttached trial
                 if(isfile(cellAttMatPath))
                     disp('Preprocessing cell attached trial');
-                                        
-                    % load data
-                    load(cellAttMatPath, 'inputParams', 'rawData', ...
-                        'rawOutput');
                     
-                    % preprocess DAQ
-                    [daqData, daqOutput, daqTime] = preprocessUserDaq(...
-                        inputParams, rawData, rawOutput, settings);
+                    % to deal with data pre 7/16/20, when cellAttached
+                    %  trial was changed to record behavior
+                    % check variables in cellAttached.mat file (whether
+                    %  processed or not) - check for rawData
+                    cellAttVars = struct2cell(whos('-file', ...
+                        cellAttMatPath));
+                    cellAttVarsName = cellAttVars(1,:);
+                    contRawData = sum(contains(cellAttVarsName, 'rawData'));
                     
-                    % preprocess ephys
-                    [ephysData, ephysMeta] = preprocessEphysData(...
-                        daqData, daqOutput, daqTime, inputParams, settings);
-                    
-                    % if there's behavioral data, preprocess that
-                    % FicTrac
-                    if(contains(inputParams.exptCond, 'Fictrac',...
-                            'IgnoreCase', true))
-                        fictrac = preprocessFicTrac(daqData, daqTime, ...
-                            settings.bob.sampRate);
-                    else % so writePData() has input
+                    % if cellAttached was not preprocessed (i.e. contains
+                    %  rawData)
+                    if (contRawData)
+                        % load data
+                        load(cellAttMatPath, 'inputParams', 'rawData', ...
+                            'rawOutput');
+
+                        % preprocess DAQ
+                        [daqData, daqOutput, daqTime] = preprocessUserDaq(...
+                            inputParams, rawData, rawOutput, settings);
+
+                        % preprocess ephys
+                        [ephysData, ephysMeta] = preprocessEphysData(...
+                            daqData, daqOutput, daqTime, inputParams, settings);
+
+                        % if there's behavioral data, preprocess that
+                        % FicTrac
+                        if(contains(inputParams.exptCond, 'Fictrac',...
+                                'IgnoreCase', true))
+                            fictrac = preprocessFicTrac(daqData, daqTime, ...
+                                settings.bob.sampRate);
+                        else % so writePData() has input
+                            fictrac = [];
+                        end
+
+                        % leg video
+                        if(contains(inputParams.exptCond, 'leg', ...
+                                'IgnoreCase', true))
+                            legVidPath = [preExptPath filesep ...
+                                exptInfo.flyDir '_' exptInfo.cellDir ...
+                                'cellAttachedTrial_legVid.mp4'];
+                            leg = preprocessLegVid(legVidPath, daqData, ...
+                                daqOutput, daqTime);
+                        else % so writePData() has input
+                            leg = [];
+                        end
+
+                        % update metadata spreadsheet
+                        updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
+                            flyData, inputParams, 'cellAttachedTrial', ...
+                            preExptData);
+
+                        % save pData
+                        writePData(pDataDir(), settings, exptInfo, ...
+                            preExptData, inputParams, ephysData, ephysMeta,...
+                            fictrac, leg, 'cellAttachedTrial'); 
+
+                        % clear variables specific to this trial
+                        clearvars inputParams rawData rawOutput
+                        clearvars ephysData ephysMeta fictrac leg
+                    % otherwise, must have been ephysRecording, skip
+                    %  preprocessing (only applies to data pre 7/16/20)
+                    else
+                        % load data
+                        load(cellAttMatPath, 'ephysData', 'ephysMeta');
+                        
+                        % generate relevant fields of input params
+                        inputParams.exptCond = 'ephysRecording'; 
+                        inputParams.duration = ephysData.t(end);
+                        inputParams.startTimeStamp = ...
+                            ephysMeta.startTimeStamp;
+                        inputParams.aInCh = {};
+                        inputParams.aOutCh = {};
+                        inputParams.dInCh = {};
+                        inputParams.dOutCh = {};
+                        
+                        % empty vectors for fictrac and leg, since not
+                        % present
                         fictrac = [];
-                    end
-                    
-                    % leg video
-                    if(contains(inputParams.exptCond, 'leg', ...
-                            'IgnoreCase', true))
-                        legVidPath = [preExptPath filesep ...
-                            exptInfo.flyDir '_' exptInfo.cellDir ...
-                            'cellAttachedTrial_legVid.mp4'];
-                        leg = preprocessLegVid(legVidPath, daqData, ...
-                            daqOutput, daqTime);
-                    else % so writePData() has input
                         leg = [];
+                        
+                        % update metadata spreadsheet
+                        updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
+                            flyData, inputParams, 'cellAttachedTrial', ...
+                            preExptData);
+
+                        % save pData
+                        writePData(pDataDir(), settings, exptInfo, ...
+                            preExptData, inputParams, ephysData, ephysMeta,...
+                            fictrac, leg, 'cellAttachedTrial'); 
+                        
+                        % clear variables specific to this trial
+                        clearvars inputParams ephysData ephysMeta
+                        
                     end
-                    
-                    % update metadata spreadsheet
-                    updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
-                        flyData, inputParams, 'cellAttachedTrial', ...
-                        preExptData);
-                    
-                    % save pData
-                    writePData(pDataDir(), settings, exptInfo, ...
-                        preExptData, inputParams, ephysData, ephysMeta,...
-                        fictrac, leg, 'cellAttachedTrial'); 
-                    
-                    % clear variables specific to this trial
-                    clearvars inputParams rawData rawOutput
-                    clearvars ephysData ephysMeta fictrac leg
+                        
                 end
             % if there's no preExpt data  (9/8/20 - not currently possible 
             %  if there are additional trials recorded properly, but handle
@@ -150,8 +200,8 @@ function preprocess()
             trialFiles = dir([cellPath filesep 'trial*']);
             
             % loop through trials in cell folder
-            for k = 1:length(trialFolder)
-                trialPath = [cellFolder filesep trialFiles(k).name];
+            for k = 1:length(trialFiles)
+                trialPath = [cellPath filesep trialFiles(k).name];
                 
                 % name of trial, without .mat suffix
                 trialName = trialFiles(k).name;
@@ -191,7 +241,7 @@ function preprocess()
                 % leg video
                 if(contains(inputParams.exptCond, 'leg', 'IgnoreCase',...
                         true))
-                    legVidPath = [cellFolder filesep exptInfo.flyDir ...
+                    legVidPath = [cellPath filesep exptInfo.flyDir ...
                         '_' exptInfo.cellDir '_' trialName ...
                         '_legVid.mp4'];
                     leg = preprocessLegVid(legVidPath, daqData, ...
@@ -210,7 +260,14 @@ function preprocess()
                     preExptData, inputParams, ephysData, ephysMeta,...
                     fictrac, leg, trialName);  
                 
+                % clear variables specific to this trial
+                clearvars inputParams rawData rawOutput
+                clearvars ephysData ephysMeta fictrac leg
+                
             end
+            
+            % clear variabls specific to this cell
+            clearvars exptInfo flyData settings preExptData
             
             % update display with what's happening; which cell done
             fprintf('Done preprocessing %s\n', cellFolders(j).name);

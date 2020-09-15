@@ -61,6 +61,6 @@ function leg = preprocessLegVid(legVidPath, daqData, daqOutput, daqTime)
     % save some parameters about the video
     leg.vidHeight = legVidReader.Height;
     leg.vidWidth = legVidReader.Width;
-    leg.numVidFrames = legVidReader.NumFrames;
+    leg.numVidFrames = round(legVidReader.Duration * legVidReader.FrameRate);
     
 end
