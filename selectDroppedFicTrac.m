@@ -10,7 +10,7 @@
 %   none, but user selects trial folder to process
 %
 % OUTPUT:
-%   none, but saves dropInd variable into fictracDat.mat
+%   none, but saves dropInd variable into pData file
 %
 % Created: 9/11/20 - HHY
 %

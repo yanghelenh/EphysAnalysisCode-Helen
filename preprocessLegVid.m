@@ -9,6 +9,7 @@
 %
 %
 % INPUTS:
+%   legVidPath - full path to leg video mp4
 %   daqData - struct of data from experimental DAQ, processed by
 %       preprocessUserDaq()
 %   daqOutput - struct of output signals sent by experimental DAQ,
@@ -18,14 +19,19 @@
 % OUTPUTS:
 %   leg - output struct with following fields:
 %   	frameTimes - start times of each leg video frame, in seconds
-%   	trigTimes -start times of each leg video frame trigger, in seconds
+%   	trigTimes - start times of each leg video frame trigger, in seconds
+%       vidHeight - height in pixels of leg video
+%       vidWidth - width in pixels of leg video
+%       numVidFrames - number of video frames in leg video file
 %
 % CREATED: 8/7/20 HHY
+%
 % UPDATED: 
 %   8/7/20 - HHY
 %   9/6/20 - HHY - convert output to leg struct 
+%   9/14/20 - HHY - include info about video frame size
 
-function leg = preprocessLegVid(daqData, daqOutput, daqTime)
+function leg = preprocessLegVid(legVidPath, daqData, daqOutput, daqTime)
 
     % frame start indicies, strobe signal - find falling edges
     frameStarts = find(diff(daqData.legCamFrames) < -0.1);
@@ -48,5 +54,13 @@ function leg = preprocessLegVid(daqData, daqOutput, daqTime)
     % save into leg output struct
     leg.frameTimes = legVidFrameTimes;
     leg.trigTimes = legVidTrigTimes;
+    
+    % video reader for leg video
+    legVidReader = VideoReader(legVidPath);
+    
+    % save some parameters about the video
+    leg.vidHeight = legVidReader.Height;
+    leg.vidWidth = legVidReader.Width;
+    leg.numVidFrames = legVidReader.NumFrames;
     
 end
