@@ -106,7 +106,8 @@ function updateMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
         
         % seal resistance
         if(isfield(preExptData, 'sealResistance'))
-            sealResistance = preExptData.sealResistance;
+            % divide by 1000 to convert to GOhms
+            sealResistance = preExptData.sealResistance / 1000;
         else
             sealResistance = 'N/A';
         end

@@ -18,11 +18,19 @@ function addMyPaths()
     addpath(genpath(metadataPath));
     
     %% Python functions, add to python system path
+    [~, ~, pyLoaded] = pyversion;
+    
+    if ~(pyLoaded)
+        pyversion '/anaconda3/bin/python'
+    end
+    
     a2libPath = '/Users/hyang/Documents/EphysAnalysisCode-Helen/a2lib';
     P = py.sys.path;
     if count(P,a2libPath) == 0
         insert(P,int32(0),a2libPath);
     end
+    
+    pyversion
 
     %% Folder containing processed data (*_pdata.mat files)
     addpath(pDataDir());

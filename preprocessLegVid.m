@@ -30,6 +30,7 @@
 %   8/7/20 - HHY
 %   9/6/20 - HHY - convert output to leg struct 
 %   9/14/20 - HHY - include info about video frame size
+%   9/15/20 - HHY - check that leg video actually exists
 
 function leg = preprocessLegVid(legVidPath, daqData, daqOutput, daqTime)
 
@@ -55,12 +56,21 @@ function leg = preprocessLegVid(legVidPath, daqData, daqOutput, daqTime)
     leg.frameTimes = legVidFrameTimes;
     leg.trigTimes = legVidTrigTimes;
     
-    % video reader for leg video
-    legVidReader = VideoReader(legVidPath);
-    
-    % save some parameters about the video
-    leg.vidHeight = legVidReader.Height;
-    leg.vidWidth = legVidReader.Width;
-    leg.numVidFrames = round(legVidReader.Duration * legVidReader.FrameRate);
+    % if video file exists
+    if (isfile(legVidPath))
+
+        % video reader for leg video
+        legVidReader = VideoReader(legVidPath);
+
+        % save some parameters about the video
+        leg.vidHeight = legVidReader.Height;
+        leg.vidWidth = legVidReader.Width;
+        leg.numVidFrames = round(legVidReader.Duration * ...
+            legVidReader.FrameRate);
+    else
+        leg.vidHeight = [];
+        leg.vidWidth = [];
+        leg.numVidFrames = [];
+    end
     
 end

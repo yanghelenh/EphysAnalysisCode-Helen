@@ -15,7 +15,7 @@
 % Created: 9/11/20 - HHY
 %
 % Updated: 
-%   9/10/20 - HHY
+%   9/14/20 - HHY
 %
 
 function selectDroppedFicTrac()
@@ -47,7 +47,6 @@ function selectDroppedFicTrac()
             if (~strcmpi(ui, 'Y')) 
                 % stop running this function. don't overwrite 
                 disp('Ending selectDroppedFicTrac. Nothing overwritten');
-                cd(curDir); % return to previous directory
                 return;
             end
         end

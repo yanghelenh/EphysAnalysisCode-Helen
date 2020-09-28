@@ -14,6 +14,8 @@
 %
 % UPDATED:
 %   9/14/20 - HHY
+%   9/16/20 - HHY - correct bug with selecting single vs. multiple pData
+%       files; single doesn't generate cell array
 %
 function ephysGetSpikes_all()
     % some constants
@@ -26,9 +28,24 @@ function ephysGetSpikes_all()
     [pDataFNames, pDataPath] = uigetfile('*.mat', 'Select pData files', ...
         pDataDir(), 'MultiSelect', 'on');
     
-    for i = 1:length(pDataFNames)
+    % if only 1 pData file selected, not cell array; make sure loop still
+    %  works 
+    if (iscell(pDataFNames))
+        numPDataFiles = length(pDataFNames);
+    else
+        numPDataFiles = 1;
+    end
+    
+    for i = 1:numPDataFiles
         
-        pDataFullPath = [pDataPath pDataFNames{i}];
+        % handle whether it's a cell array or not
+        if (iscell(pDataFNames))
+            pDataName = pDataFNames{i};
+        else
+            pDataName = pDataFNames;
+        end
+        
+        pDataFullPath = [pDataPath pDataName];
         
         % load pData
         load(pDataFullPath, 'exptCond');
@@ -59,11 +76,11 @@ function ephysGetSpikes_all()
             save(pDataFullPath, 'ephysSpikes', '-append');
             
             % display
-            fprintf('Saved ephysSpikes for %s!\n', pDataFNames{i});
+            fprintf('Saved ephysSpikes for %s!\n', pDataName);
             
         else
             % display
-            fprintf('%s does not have ephys data\n', pDataFNames{i});
+            fprintf('%s does not have ephys data\n', pDataName);
         end
     end
 

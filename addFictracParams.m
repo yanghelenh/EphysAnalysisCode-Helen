@@ -1,29 +1,21 @@
-% filtFictrac_all.m
+% addFictracParams.m
 %
-% Function that downsamples and filters FicTrac data of all user-selected
-%  pData files. Runs by calling dsFiltFictrac(), which operates on a single
-%  trial.
-%
-% Must have run selectDroppedFicTrac() on selected pData first.
+% Quick function to save FicTrac parameters from filtFictrac_all() into the
+%  pData file. Corrects for bug (fixed 9/26/20) where it wasn't saved.
 %
 % INPUTS:
-%   none, but prompts user to select pData files to process
+%   none, but prompts user to select pData files to add FicTrac parameters
+%    to
 %
 % OUTPUTS:
-%   none, but saves processed FicTrac data back into pData file, as struct
-%       fictracProc
+%   none, but updates pData file with FicTrac parameters
 %
-% CREATED: 9/11/20 - HHY
+% CREATED: 9/26/20 - HHY
 %
-% UPDATED: 
-%   9/11/20 - HHY
-%   9/16/20 - HHY - correct bug with selecting single vs. multiple pData
-%       files; single doesn't generate cell array
-%   9/26/20 - HHY - save fictracParams
+% UPDATED: 9/26/20 - HHY
 %
-function filtFictrac_all()
-
-    % some constants
+function addFictracParams()
+    % FicTrac parameters to add
     fictracParams.dsf = 20; % downsample to 1000 Hz;
     fictracParams.filtParams.padLen = int32(200);
     fictracParams.filtParams.sigmaPos = int32(100); % 100 ms
@@ -33,8 +25,8 @@ function filtFictrac_all()
     circum = BALL_DIAM * pi; % circumference of ball, in mm
     fictracParams.mmPerDeg = circum / 360; % mm per degree of ball
     fictracParams.degPerMM = 360 / circum; % deg per mm ball
-
-    % prompt user to select pData files
+    
+        % prompt user to select pData files
     [pDataFNames, pDataPath] = uigetfile('*.mat', 'Select pData files', ...
         pDataDir(), 'MultiSelect', 'on');
     
@@ -63,22 +55,15 @@ function filtFictrac_all()
         
         % check that pData has FicTrac data, otherwise, skip
         if (contains(exptCond, 'Fictrac', 'IgnoreCase', true))
-            % load fictrac struct only if experiment has it
-            load(pDataFullPath, 'fictrac');
             
-            % call dsFiltFictrac() to perform processing
-            fictracProc = dsFiltFictrac(fictracParams, fictrac) ;
-            
-            % save fictracProc into pData file
-            save(pDataFullPath, 'fictracProc', 'fictracParams', '-append');
+            % save fictracParams into pData file
+            save(pDataFullPath, 'fictracParams', '-append');
             
             % display
-            fprintf('Saved fictracProc for %s!\n', pDataName);
+            fprintf('Saved fictracParams for %s!\n', pDataName);
         else
             % display
             fprintf('%s does not have FicTrac data\n', pDataName);
         end
     end
-    
-
 end
