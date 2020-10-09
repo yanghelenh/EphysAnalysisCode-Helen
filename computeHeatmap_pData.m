@@ -176,16 +176,17 @@ function [heatmapMat] = computeHeatmap_pData()
         % generate heat maps
         xDataName = 'yawAngVel';
         yDataName = 'fwdVel';
-%         zDataName = 'spikeRate';
-        zDataName = 'counts';
-        xScale = [-300 300 30];
+        zDataName = 'spikeRate';
+%         zDataName = 'counts';
+        xScale = [-250 250 25];
         yScale = [-5 15 30];
 %         zScale = [0 150];
-        zScale = [0 1000];
+        zScale = [0 125];
         minNumVals = 20;
-        offsets = 0;
+%         offsets = 0;
 %         offsets = [-4000 -2000 -1500 -1000 -800 -600 -500 -400 -300 -200 -100 -50 0 100 200 500 1000 1500 2000 4000];
 %         offsets = [-2000 0 2000];
+        offsets = [-300 -250 -200 -150 -125 -100 -75 -50 -25 0];
         degPerMM = [];
         ttl = [dateName ' ' flyName ' ' cellName ' ' trialName];
         

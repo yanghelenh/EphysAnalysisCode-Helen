@@ -57,7 +57,7 @@ function [f, heatmapMat, countsMat] = genHeatmap(xDat, yDat, zDat,...
     offsets, degPerMM, ttl)
 
     colorRes = 256; % number of different colors in heatmap, must be even
-    colorbarWhite = 75; % using redblue colorbar, what value is white
+    colorbarWhite = zScale(2)/2; % using redblue colorbar, what value is white
     nanVal = [0.5 0.5 0.5]; % value for bins without enough data
     numTicks = 11; % number of ticks for colorbar
     

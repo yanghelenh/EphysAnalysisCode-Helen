@@ -37,7 +37,8 @@ function [inds, filtMetaDat] = returnSelectMetaDat(metaDat, vars, conds)
         for i = 1:length(vars)
             % if the field is one of the numerical fields
             if strcmpi(class(metaDat.(vars{i})), 'double')
-                logOut = eval(['metaDat.' vars{i} conds{i}]);
+                logOut = eval(sprintf(conds{i}, ['metaDat.' vars{i}]));
+%                 logOut = eval(['metaDat.' vars{i} conds{i}]);
             % field is one of the string fields
             else
                 logOut = strcmpi(metaDat.(vars{i}), conds{i});
@@ -48,7 +49,8 @@ function [inds, filtMetaDat] = returnSelectMetaDat(metaDat, vars, conds)
         end
     else % only one condition
         if strcmpi(class(metaDat.(vars)), 'double')
-            logicalDat = eval(['metaDat.' vars conds]);
+%             logicalDat = eval(['metaDat.' vars conds]);
+              logicalDat = eval(sprintf(conds{i}, ['metaDat.' vars{i}]));
         else
             logicalDat = strcmpi(metaDat.(vars), conds);
         end
