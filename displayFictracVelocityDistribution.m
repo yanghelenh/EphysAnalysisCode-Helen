@@ -6,6 +6,8 @@
 %  velocities.
 % Used to check FicTrac calibration, as existing data suggests there is a
 %  rightward skew. As of 10/9/20
+% Displays 3D scatterplot showing point cloud around (0,0,0) in yaw,
+%  forward and slide axes
 %
 % INPUTS:
 %   none, but prompts user for trial.mat file
@@ -17,6 +19,7 @@
 %
 % UPDATED:
 %   10/9/20 - HHY
+%   10/12/20 - HHY
 %
 function displayFictracVelocityDistribution()
     % some constants
@@ -31,11 +34,15 @@ function displayFictracVelocityDistribution()
     fictracParams.degPerMM = 360 / circum; % deg per mm ball
     
     % plotting constants
-    xScale = [-250 250 25];
-    yScale = [-5 15 30];
-    zScale = [0 2000]; % check this
+    xScale = [-50 50 25];
+    yScale = [-50 50 25];
+    zScale = [0 5000]; % check this
     minNumVals = 20;
     offsets = 0;
+    
+    xDataName = 'yawAngVel';
+    yDataName = 'fwdVel';
+    zDataName = 'counts';
     
 
     disp('Select trial.mat file from FicTrac experiment');
@@ -65,9 +72,26 @@ function displayFictracVelocityDistribution()
         fictracProc = dsFiltFictrac(fictracParams, fictrac);
         
         % plot heatmap
-        genHeatmap(fictracProc.yawAngVel', fictracProc.fwdVel', [],...
-            'yawAngVel', 'fwdVel', 'counts', xScale, yScale, zScale, ...
+        genHeatmap(fictracProc.(xDataName)', fictracProc.(yDataName)', [],...
+            xDataName, yDataName, zDataName, xScale, yScale, zScale, ...
             minNumVals, offsets, fictracParams.degPerMM, ftFileName);
+        
+        % plot 3D scatterplot, shows point cloud in all 3 dimensions
+        figure;
+        scatter3(fictracProc.yawAngVel, ...
+            fictracProc.fwdVel*fictracParams.degPerMM, ...
+            fictracProc.slideVel*fictracParams.degPerMM, ...
+            'Marker', '.', ...
+            'MarkerFaceAlpha', 0.2, 'MarkerEdgeAlpha', 0.2);
+        axLims = [xScale(1) xScale(2)];
+        xlim(axLims);
+        ylim(axLims);
+        zlim(axLims);
+        xlabel('yawAngVel (deg/s)');
+        ylabel('fwdVel (deg/s)');
+        zlabel('slideVel (deg/s)');
+        axis square;
+        
         
     else % otherwise, display error message and return
         disp('Selected trial.mat file does not contain fictrac data');

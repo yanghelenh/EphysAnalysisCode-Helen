@@ -102,7 +102,7 @@ function [f, heatmapMat, countsMat] = genHeatmap(xDat, yDat, zDat,...
         % if the x data is in mm and the user desires a conversion
         %  to degrees
         if ~isempty(degPerMM) && ...
-                strfind(behVarsUnits{xBehVarInd}, 'mm')
+                ~isempty(strfind(behVarsUnits{xBehVarInd}, 'mm'))
             xDat = xDat .* degPerMM;
             xUnits = 'deg/s';
         else
@@ -119,7 +119,7 @@ function [f, heatmapMat, countsMat] = genHeatmap(xDat, yDat, zDat,...
         % if the y data is in mm and the user desires a conversion
         %  to degrees
         if ~isempty(degPerMM) && ...
-                strfind(behVarsUnits{yBehVarInd}, 'mm')
+                ~isempty(strfind(behVarsUnits{yBehVarInd}, 'mm'))
             yDat = yDat .* degPerMM;
             yUnits = 'deg/s';
         else

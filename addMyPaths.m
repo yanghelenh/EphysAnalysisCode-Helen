@@ -4,20 +4,13 @@
 %
 % Users: change the following paths to match those on your local computer
 
-function addMyPaths()    
+function addMyPaths() 
     %% Animal Part Tracker code
     APTpath = '/Users/hyang/Documents/MATLAB/APT';
     addpath(genpath(APTpath));
-
-    %% Analysis code repository (EphysAnalysisCode-Helen)
-    analysisPath = '/Users/hyang/Documents/EphysAnalysisCode-Helen';
-    addpath(genpath(analysisPath));
-
-    %% Folder containing metadata spreadsheet 
-    metadataPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen';
-    addpath(genpath(metadataPath));
     
     %% Python functions, add to python system path
+    
     [~, ~, pyLoaded] = pyversion;
     
     if ~(pyLoaded)
@@ -32,6 +25,14 @@ function addMyPaths()
     
     pyversion
 
+    %% Analysis code repository (EphysAnalysisCode-Helen)
+    analysisPath = '/Users/hyang/Documents/EphysAnalysisCode-Helen';
+    addpath(genpath(analysisPath));
+
+    %% Folder containing metadata spreadsheet 
+    metadataPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen';
+    addpath(genpath(metadataPath));
+   
     %% Folder containing processed data (*_pdata.mat files)
     addpath(pDataDir());
 
