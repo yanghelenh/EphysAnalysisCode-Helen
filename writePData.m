@@ -32,13 +32,15 @@
 %
 % UPDATED:
 %   9/8/20 - HHY
+%   9/24/21 - HHY - add _pData suffix to all pData file names
 %
 function writePData(pDataDir, settings, exptInfo, preExptData, ...
     inputParams, ephysData, ephysMeta, fictrac, leg, trialName)
 
     % full path to pData file pDataDir/date_fly#_cell#_trialName.mat
    	pDataFileName = [pDataDir filesep exptInfo.dateDir '_' ...
-        exptInfo.flyDir '_' exptInfo.cellDir '_' trialName '.mat'];
+        exptInfo.flyDir '_' exptInfo.cellDir '_' trialName ...
+        '_pData.mat'];
     
     % correct exptCond for legFictracEphysIInj prior to 9/8/20
     if ((datetime(exptInfo.exptDate, 'InputFormat', 'yyMMdd') < ...
