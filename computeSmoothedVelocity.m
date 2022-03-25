@@ -20,28 +20,16 @@
 % CREATED: 8/28/19 - HHY
 %
 % UPDATED: 8/28/19 - HHY
+%   10/4/21 - HHY - matlab code for smoothing, not python
 %
 
 function [smoPos, smoVel] = computeSmoothedVelocity(pos, padLen, ...
     sigmaPos, sigmaVel, sampRate)
-
-    % check that pos is row vector
-    if ~isrow(pos)
-        pos = pos';
-    end
-    
-    % first, smooth position by convolving with gaussian kernel
-    smoPosPy = py.proc_utils.safe_interp_conv_smooth_ball_data(...
-        pos, padLen, sigmaPos);
-    % convert from python to matlab data format
-    smoPos = cell2mat(cell(smoPosPy.tolist()));
+   
+    smoPos = gaussSmooth(pos, padLen, sigmaPos);
 
     % compute velocity
     vel = gradient(smoPos) .* sampRate;
     
-    % smooth again in velocity
-    smoVelPy = py.proc_utils.safe_interp_conv_smooth_ball_data(...
-        vel, padLen, sigmaVel);
-    % convert from python to matlab data format
-    smoVel = cell2mat(cell(smoVelPy.tolist()));
+    smoVel = gaussSmooth(vel,padLen,sigmaVel);
 end

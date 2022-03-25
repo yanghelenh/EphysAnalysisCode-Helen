@@ -20,7 +20,11 @@
 function ephysGetSpikes_all()
     % some constants
     % threshold in 1st derivative to detect spikes
-    ephysSpikes.params.dvdtThresh = 8000; 
+%     ephysSpikes.params.dvdtThresh = 8000; 
+%     ephysSpikes.params.refractoryPeriod = 2/1000; % 2 ms min time b/w spikes
+%     ephysSpikes.params.medFiltOrder = 0.05; % 50 ms median filter to remove spikes
+
+    ephysSpikes.params.dvdtThresh = 3000; 
     ephysSpikes.params.refractoryPeriod = 2/1000; % 2 ms min time b/w spikes
     ephysSpikes.params.medFiltOrder = 0.05; % 50 ms median filter to remove spikes
 

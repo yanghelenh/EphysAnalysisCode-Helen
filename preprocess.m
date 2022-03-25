@@ -36,6 +36,7 @@
 %   9/10/20 - HHY
 %   9/15/20 - HHY - fix bugs in handling cellAttachedTrial from prior to
 %       change in preExperimentalRoutine (7/16/20)
+%   10/4/21 - HHY - allow processing of FicTrac data through FicTrac vid
 %
 function preprocess()
 
@@ -230,7 +231,15 @@ function preprocess()
 
                 % if there's behavioral data, preprocess that
                 % FicTrac
-                if(contains(inputParams.exptCond, 'Fictrac', ...
+                if(contains(inputParams.exptCond, 'Fictracvid', ...
+                        'IgnoreCase', true))
+                    
+                    datFilePath = [cellPath filesep 'FicTrac' filesep ...
+                        'Run3_newCalib' filesep trialName '_fictracVid.dat'];
+                    fictrac = getFictracFromDat(datFilePath, daqData, ...
+                        daqTime);
+                    
+                elseif(contains(inputParams.exptCond, 'Fictrac', ...
                         'IgnoreCase', true))
                     fictrac = preprocessFicTrac(daqData, daqTime, ...
                         settings.bob.sampRate);

@@ -42,7 +42,8 @@ function startInd = detectSpikes(voltage, t, dvdtThresh, refractoryPeriod)
     abvThresh = dvdt > dvdtThresh;
     
 	% find indicies for when these threshold crossings occur
-    spikeStartInd = find(gradient(abvThresh) == 1); % 1st to exceed thresh
+%     spikeStartInd = find(gradient(abvThresh) == 1); % 1st to exceed thresh
+    spikeStartInd = find(diff(abvThresh) == 1) + 1; % 1st to exceed thresh
     
 %     % correct for taking difference
 %     spikeStartInd = spikeStartInd;
