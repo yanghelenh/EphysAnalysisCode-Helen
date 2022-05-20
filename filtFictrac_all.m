@@ -26,8 +26,8 @@ function filtFictrac_all()
     % some constants
     fictracParams.dsf = 20; % downsample to 1000 Hz;
     fictracParams.filtParams.padLen = 200;
-    fictracParams.filtParams.sigmaPos = 100; % 100 ms
-    fictracParams.filtParams.sigmaVel = 50; % 50 ms
+    fictracParams.filtParams.sigmaPos = 200; % 200 ms
+    fictracParams.filtParams.sigmaVel = 100; % 100 ms
     
     BALL_DIAM = 6.46;
     circum = BALL_DIAM * pi; % circumference of ball, in mm

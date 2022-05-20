@@ -22,6 +22,12 @@
 %   fed into APT. Copies leg video into user specified folder (for all leg
 %   videos).
 %
+% On optogenetic stimulation data:
+%  Extracts timing of optogenetic stimulation (start time, end time,
+%   duration, logical for stim on/off). Also matches duration to commanded
+%   duration to make averaging in later analyses easier. Saves this as well
+%   as user-specified parameters about stimulation.
+%
 % All info saved into pData.mat file, which is saved into user specified
 %  folder (for all pData.mat files).
 %
@@ -40,6 +46,7 @@
 %   3/25/22 - HHY - update handling of leg video files so that files with
 %       and without the date in the file name are recognized (added date to
 %       file name on 3/24/22)
+%   3/28/22 - HHY - update to enable preprocessing of opto stim trials
 %
 function preprocess()
 
@@ -148,10 +155,21 @@ function preprocess()
                                     exptInfo.cellDir ...
                                     'cellAttachedTrial_legVid.mp4'];
                             end
+
                             leg = preprocessLegVid(legVidPath, daqData, ...
                                 daqOutput, daqTime);
                         else % so writePData() has input
                             leg = [];
+                        end
+
+                        % opto (unlikely to actually exist here, but option
+                        % anyway)
+                        if(contains(inputParams.exptCond, 'opto',...
+                                'IgnoreCase',true))
+                            opto = preprocessOpto(daqData, daqTime, ...
+                                inputParams);
+                        else
+                            opto = [];
                         end
 
                         % update metadata spreadsheet
@@ -162,11 +180,11 @@ function preprocess()
                         % save pData
                         writePData(pDataDir(), settings, exptInfo, ...
                             preExptData, inputParams, ephysData, ephysMeta,...
-                            fictrac, leg, 'cellAttachedTrial'); 
+                            fictrac, leg, opto, 'cellAttachedTrial'); 
 
                         % clear variables specific to this trial
                         clearvars inputParams rawData rawOutput
-                        clearvars ephysData ephysMeta fictrac leg
+                        clearvars ephysData ephysMeta fictrac leg optp
                     % otherwise, must have been ephysRecording, skip
                     %  preprocessing (only applies to data pre 7/16/20)
                     else
@@ -288,19 +306,36 @@ function preprocess()
                     leg = [];
                 end
 
-                % update metadata spreadsheet
-                updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
-                    flyData, inputParams, trialName, ...
-                    preExptData);
+                % opto stimulation
+                if(contains(inputParams.exptCond, 'opto', 'IgnoreCase',...
+                        true))
+                    opto = preprocessOpto(daqData, daqTime, inputParams);
+                else % so writePData() has input
+                    opto = [];
+                end
+
+                % update metadata spreadsheet - different types for
+                % behavior only vs. ephys
+                % for ephys experiments
+                if(contains(inputParams.exptCond, 'ephys','IgnoreCase',...
+                        true))
+                    updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
+                        flyData, inputParams, trialName, ...
+                        preExptData);
+                % for behavior only experiments    
+                else
+                    updateBehMetadataSprdsht(sprdshtFullPath, exptInfo,...
+                        flyData, inputParams, trialName);
+                end
 
                 % save pData
                 writePData(pDataDir(), settings, exptInfo, ...
                     preExptData, inputParams, ephysData, ephysMeta,...
-                    fictrac, leg, trialName);  
+                    fictrac, leg, opto, trialName);  
                 
                 % clear variables specific to this trial
                 clearvars inputParams rawData rawOutput
-                clearvars ephysData ephysMeta fictrac leg
+                clearvars ephysData ephysMeta fictrac leg opto
                 
             end
             
