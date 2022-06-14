@@ -2,16 +2,16 @@
 
 % some constants
 fictracParams.dsf = 20; % downsample to 1000 Hz;
-fictracParams.filtParams.padLen = int32(200);
-fictracParams.filtParams.sigmaPos = int32(100); % 100 ms
-fictracParams.filtParams.sigmaVel = int32(50); % 50 ms
+fictracParams.filtParams.padLen = 200;
+fictracParams.filtParams.sigmaPos = 100; % 100 ms
+fictracParams.filtParams.sigmaVel = 50; % 50 ms
 
 BALL_DIAM = 6.46;
 circum = BALL_DIAM * pi; % circumference of ball, in mm
 fictracParams.mmPerDeg = circum / 360; % mm per degree of ball
 fictracParams.degPerMM = 360 / circum; % deg per mm ball
 
-dataPath = '/Users/hyang/Dropbox (HMS)/VisualBehaviorData_RAW/210227/fly02/cell01/trial04.mat';
+dataPath = '/Users/hyang/Dropbox (HMS)/VisualBehaviorData_RAW/210227/fly02/cell01/trial05.mat';
 metadataPath = '/Users/hyang/Dropbox (HMS)/VisualBehaviorData_RAW/210227/fly02/cell01/metaDat.mat';
 
 % load data
@@ -39,7 +39,7 @@ visstimX = downsample(daqData.panelsDAC0X, dsf);
 visstimY = downsample(daqData.panelsDAC1Y, dsf);
 
 % plot
-xRange = [150 200];
+xRange = [0 300];
 
 figure;
 

@@ -33,8 +33,8 @@ ttlStr = sprintf('Forward Velocity, %.1f sec stim', durs(durInd));
 
 title(ttlStr);
 
-% legend({'ND = 3', 'ND = 2', 'ND = 1.3','ND = 0.6', 'ND = 0'});
-legend({'ND = 2.0', 'ND = 1.3','ND = 0.6', 'ND = 0'});
+legend({'ND = 3', 'ND = 2', 'ND = 1.3','ND = 0.6', 'ND = 0'});
+% legend({'ND = 2.0', 'ND = 1.3','ND = 0.6', 'ND = 0'});
 % legend('ND = 0');
 % legend({'ND = 3', 'ND = 2'});
 % legend({'ND = 1.3','ND = 0.6', 'ND = 0'});
@@ -50,7 +50,7 @@ hold on;
 sampRate = 1000;
 avgWin = 0.1;
 
-durInd = 2;
+durInd = 0.2;
 
 for i = 1:length(NDs)
     % moving average smooth FicTrac data
@@ -77,8 +77,8 @@ ttlStr = sprintf('Yaw Velocity, %.1f sec stim', durs(durInd));
 
 title(ttlStr);
 
-% legend({'ND = 3', 'ND = 2', 'ND = 1.3','ND = 0.6', 'ND = 0'});
-legend({'ND = 2.0', 'ND = 1.3','ND = 0.6', 'ND = 0'});
+legend({'ND = 3', 'ND = 2', 'ND = 1.3','ND = 0.6', 'ND = 0'});
+% legend({'ND = 2.0', 'ND = 1.3','ND = 0.6', 'ND = 0'});
 % legend({'ND = 3', 'ND = 2'});
 % legend('ND = 0');
 % legend({'ND = 1.3','ND = 0.6', 'ND = 0'});
