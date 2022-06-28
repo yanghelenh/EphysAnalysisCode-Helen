@@ -10,6 +10,11 @@
 %  Associates pipette resistance, seal resistance, holding current, access 
 %   resistance, input resistance, Vm rest with all trials for that cell. 
 %  Cell attached trial gets its own pData.mat file.
+%
+% On current injection data:
+%  Run after preprocessing ephys data
+%  Extracts start and end times, duration, and amplitude of each current
+%   injection step. Saves parameters of current injection as well.
 % 
 % On FicTrac data:
 %  Converts raw voltage traces collected on experimental DAQ into position
@@ -47,6 +52,8 @@
 %       and without the date in the file name are recognized (added date to
 %       file name on 3/24/22)
 %   3/28/22 - HHY - update to enable preprocessing of opto stim trials
+%   6/28/22 - HHY - update to enable preprocessing of current injection
+%       trials
 %
 function preprocess()
 
@@ -125,6 +132,15 @@ function preprocess()
                         [ephysData, ephysMeta] = preprocessEphysData(...
                             daqData, daqOutput, daqTime, inputParams, settings);
 
+                        % preprocess current injection (unlike to exist
+                        %  here, but include anyway)
+                        if(contains(inputParams.exptCond, 'IInj',...
+                                'IgnoreCase', true))
+                            iInj = preprocessIInj(ephysData, inputParams);
+                        else
+                            iInj = [];
+                        end
+
                         % if there's behavioral data, preprocess that
                         % FicTrac
                         if(contains(inputParams.exptCond, 'Fictrac',...
@@ -180,7 +196,7 @@ function preprocess()
                         % save pData
                         writePData(pDataDir(), settings, exptInfo, ...
                             preExptData, inputParams, ephysData, ephysMeta,...
-                            fictrac, leg, opto, 'cellAttachedTrial'); 
+                            fictrac, leg, opto, iInj, 'cellAttachedTrial'); 
 
                         % clear variables specific to this trial
                         clearvars inputParams rawData rawOutput
@@ -201,10 +217,11 @@ function preprocess()
                         inputParams.dInCh = {};
                         inputParams.dOutCh = {};
                         
-                        % empty vectors for fictrac and leg, since not
-                        % present
+                        % empty vectors for not present variables
                         fictrac = [];
                         leg = [];
+                        opto = [];
+                        iInj = [];
                         
                         % update metadata spreadsheet
                         updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
@@ -214,7 +231,7 @@ function preprocess()
                         % save pData
                         writePData(pDataDir(), settings, exptInfo, ...
                             preExptData, inputParams, ephysData, ephysMeta,...
-                            fictrac, leg, 'cellAttachedTrial'); 
+                            fictrac, leg, opto, iInj, 'cellAttachedTrial'); 
                         
                         % clear variables specific to this trial
                         clearvars inputParams ephysData ephysMeta
@@ -262,6 +279,14 @@ function preprocess()
                 else % so writePData() has input
                     ephysData = [];
                     ephysMeta = [];
+                end
+
+                % if there's current injection data, preprocess that
+                if (contains(inputParams.exptCond, 'IInj', 'IgnoreCase',...
+                        true))
+                    iInj = preprocessIInj(ephysData, inputParams);
+                else 
+                    iInj = [];
                 end
 
                 % if there's behavioral data, preprocess that
@@ -331,7 +356,7 @@ function preprocess()
                 % save pData
                 writePData(pDataDir(), settings, exptInfo, ...
                     preExptData, inputParams, ephysData, ephysMeta,...
-                    fictrac, leg, opto, trialName);  
+                    fictrac, leg, opto, iInj, trialName);  
                 
                 % clear variables specific to this trial
                 clearvars inputParams rawData rawOutput
