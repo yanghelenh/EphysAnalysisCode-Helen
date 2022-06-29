@@ -156,7 +156,7 @@ function iInj = preprocessIInj(ephysData, inputParams)
     iInjOnLogical = logical(iInjOnLogical);
 
     % save into struct
-    iInj.istartTimes = iInjStartTimes;
+    iInj.startTimes = iInjStartTimes;
     iInj.endTimes = iInjEndTimes;
     iInj.amps = iInjAmps;
     iInj.durs = iInjDurs;
