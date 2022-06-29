@@ -52,13 +52,13 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
     % for each variable, struct for each with reps, means, and std errors
     % reps as #amps x #durs cell array, with each element being a matrix of
     %  reps x rep length 
-    % repsOptoTimes as #amps x #durs cell array, with each element being a
+    % repsIinjTimes as #amps x #durs cell array, with each element being a
     %  vector of # reps length
     % repsPDataNames as #amps x #durs cell array, with each element being a
     %  cell array of # reps length
     % means and stdErrs as same size cell array, each element as vector 
     fictracFieldStrct.reps = cell(length(amps), length(durs));
-    fictracFieldStrct.repsOptoTimes = cell(length(amps), length(durs));
+    fictracFieldStrct.repsIinjTimes = cell(length(amps), length(durs));
     fictracFieldStrct.repsPDataNames = cell(length(amps), length(durs));
     fictracFieldStrct.means = cell(length(amps), length(durs));
     fictracFieldStrct.stdErrs = cell(length(amps), length(durs));
@@ -72,7 +72,7 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
     % for each variable, struct for each rep, mean, and std error
     % reps as #amps x #durs x #tracked points cell array, with each element
     %  being a matrix of reps x rep length
-    % repsOptoTimes as #amps x #durs x #tracked points cell array, with each
+    % repsInjTimes as #amps x #durs x #tracked points cell array, with each
     %  element being a vector of # reps length, tracking opto stim start
     %  time corresponding to each rep
     % repsPDataNames as #amps x #durs x #tracked points cell array, with
@@ -80,7 +80,7 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
     %  of the pData file the rep came from
     % means and stdErrs as same size cell array, each element as vector
     legFieldStrct.reps = cell(length(amps),length(durs),NUM_LEG_PTS);
-    legFieldStrct.repsOptoTimes = cell(length(amps),length(durs),...
+    legFieldStrct.repsInjTimes = cell(length(amps),length(durs),...
         NUM_LEG_PTS);
     legFieldStrct.repsPDataNames = cell(length(amps),length(durs),...
         NUM_LEG_PTS);
@@ -102,7 +102,7 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
     %  cell array of # reps length
     % means and stdErrs as same size cell array, each element as vector 
     ephysFieldStrct.reps = cell(length(amps), length(durs));
-    ephysFieldStrct.repsOptoTimes = cell(length(amps), length(durs));
+    ephysFieldStrct.repsIinjTimes = cell(length(amps), length(durs));
     ephysFieldStrct.repsPDataNames = cell(length(amps), length(durs));
     ephysFieldStrct.means = cell(length(amps), length(durs));
     ephysFieldStrct.stdErrs = cell(length(amps), length(durs));
@@ -148,7 +148,7 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
             load(pDataFullPath, 'legTrack','fictracProc', 'iInj', ...
                 'ephysData', 'ephysSpikes');
 
-            % loop through all FicTrac varialbes
+            % loop through all FicTrac variables
             for j = 1:length(fictracVarNames)
                 thisVarName = fictracVarNames{j};
                 thisVarVal = fictracProc.(thisVarName);
@@ -166,15 +166,15 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
                 
                 % get all reps for this pData for this FicTrac variable
                 [fictracIinj.(thisVarName).reps, ...
-                    fictracIinj.(thisVarName).repsOptoTimes, ...
+                    fictracIinj.(thisVarName).repsIinjTimes, ...
                     fictracIinj.(thisVarName).repsPDataNames,...
                     ftDurTs] = ...
-                    extractTrialsOpto(...
+                    extractTrialsIinj(...
                     fictracIinj.(thisVarName).reps, ...
-                    fictracIinj.(thisVarName).repsOptoTimes, ...
+                    fictracIinj.(thisVarName).repsIinjTimes, ...
                     fictracIinj.(thisVarName).repsPDataNames,...
                     thisVarVal, ...
-                    fictracProc.t, opto, amps, durs, bwStimDur, ...
+                    fictracProc.t, iInj, amps, durs, bwStimDur, ...
                     pDataName, norm2StimStart);
             end
             
@@ -186,20 +186,49 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
                 % loop through all tracked points, get reps
                 for k = 1:NUM_LEG_PTS
                     [legTrackIinj.(thisVarName).reps(:,:,k), ...
-                        legTrackIinj.(thisVarName).repsOptoTimes(:,:,k),...
+                        legTrackIinj.(thisVarName).repsIinjTimes(:,:,k),...
                         legTrackIinj.(thisVarName).repsPDataNames(:,:,k),...
                         legDurTs] = ...
-                        extractTrialsOpto(...
+                        extractTrialsIinj(...
                         legTrackIinj.(thisVarName).reps(:,:,k), ...
-                        legTrackIinj.(thisVarName).repsOptoTimes(:,:,k),...
+                        legTrackIinj.(thisVarName).repsIinjTimes(:,:,k),...
                         legTrackIinj.(thisVarName).repsPDataNames(:,:,k),...
-                        thisVarVal(:,k), legTrack.t, opto, amps, durs, ...
+                        thisVarVal(:,k), legTrack.t, iInj, amps, durs, ...
                         bwStimDur, pDataName, false);
                 end
             end
 
+            % loop through all ephys variables
+            for l = 1:length(ephysVarNames)
+                thisVarName = ephysVarNames{k};
+
+                % since ephys data is distributed between ephysData and
+                %  ephysSpikes, make sure to grab the variable values
+                %  correctly
+                switch thisVarName
+                    case 'scaledVoltage'
+                        thisVarVal = ephysData.(thisVarName);
+                        thisVarT = ephysData.t;
+                    otherwise
+                        thisVarVal = ephysSpikes.(thisVarName);
+                        thisVarT = ephysSpikes.t;
+                end
+
+                % get all reps for this pData for this ephys variable
+                [ephysIinj.(thisVarName).reps, ...
+                    ephysIinj.(thisVarName).repsIinjTimes, ...
+                    ephysIinj.(thisVarName).repsPDataNames,...
+                    ephysDurTs] = ...
+                    extractTrialsIinj(...
+                    ephysIinj.(thisVarName).reps, ...
+                    ephysIinj.(thisVarName).repsIinjTimes, ...
+                    ephysIinj.(thisVarName).repsPDataNames,...
+                    thisVarVal, thisVarT, iInj, amps, durs, bwStimDur, ...
+                    pDataName, false);
+            end
+
             % clear this trial's loaded data
-            clear fictracProc opto legTrack
+            clear fictracProc iInj legTrack ephysData ephysSpikes
         end
     end
 
@@ -224,16 +253,25 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
         end
     end
 
-    % add timing vectors to fictracOpto and legTrackOpto structs
+    % compute means and std errs for ephys vars
+    for i = 1:length(ephysVarNames)
+        thisVarName = ephysVarNames{i};
+        [ephysIinj.(thisVarName).means, ...
+            ephysIinj.(thisVarName).stdErrs] = ...
+            computeMeansStdErrsFictracOpto(ephysIinj.(thisVarName).reps);
+    end
+
+    % add timing vectors to all data structs
     fictracIinj.durTs = ftDurTs;
     legTrackIinj.durTs = legDurTs;
+    ephysIinj.durTs = ephysDurTs;
 
     % full path to save data
-    saveFullPath = [savePath filesep flyName '_avgLegFictracOpto.mat'];
+    saveFullPath = [savePath filesep flyName '_avgLegFictracEphysIinj.mat'];
 
     % save data
-    save(saveFullPath, 'fictracIinj','legTrackIinj','amps','durs',...
-        'bwStimDur', '-v7.3');
+    save(saveFullPath, 'fictracIinj','legTrackIinj','ephysIinj', ...
+        'amps','durs', 'bwStimDur', '-v7.3');
 
-    fprintf('Saved legFictracOpto for %s!\n', flyName);
+    fprintf('Saved legFictracEphysIinj for %s!\n', flyName);
 end
