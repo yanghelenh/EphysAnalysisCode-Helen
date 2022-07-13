@@ -80,7 +80,7 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
     %  of the pData file the rep came from
     % means and stdErrs as same size cell array, each element as vector
     legFieldStrct.reps = cell(length(amps),length(durs),NUM_LEG_PTS);
-    legFieldStrct.repsInjTimes = cell(length(amps),length(durs),...
+    legFieldStrct.repsIinjTimes = cell(length(amps),length(durs),...
         NUM_LEG_PTS);
     legFieldStrct.repsPDataNames = cell(length(amps),length(durs),...
         NUM_LEG_PTS);
@@ -200,7 +200,7 @@ function computeLegFictracEphysIinj_1Fly(amps, durs, bwStimDur, savePath)
 
             % loop through all ephys variables
             for l = 1:length(ephysVarNames)
-                thisVarName = ephysVarNames{k};
+                thisVarName = ephysVarNames{l};
 
                 % since ephys data is distributed between ephysData and
                 %  ephysSpikes, make sure to grab the variable values
