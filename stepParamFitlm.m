@@ -30,8 +30,11 @@
 %
 % UPDATED:
 %   7/11/22 - HHY
+%   7/13/22 - HHY - add variable names to fitlm call
+%   7/27/22 - HHY - step parameter vector uses spline interpolation instead
+%       of constant value for whole step
 %
-function stepParamFiltlm(paramList, legList, phaseList, ephysVarName, ...
+function stepParamFitlm(paramList, legList, phaseList, ephysVarName, ...
     timeDelay, sampRate, savePath)
 
     % prompt user to select pData files
@@ -73,7 +76,7 @@ function stepParamFiltlm(paramList, legList, phaseList, ephysVarName, ...
         if (ismember('ephysSpikes',varNames) && ...
                 ismember('legSteps',varNames))
             % load relevant data from pData
-            load(pDataFullPath, 'ephysSpikes','legSteps');
+            load(pDataFullPath, 'ephysSpikes','legSteps','moveNotMove');
         % if pData file doesn't contain both structs, skip to next file
         else 
             fprintf('%s does not contain both ephysSpikes and legSteps. Skipping to next pData file.\n',...
@@ -128,6 +131,10 @@ function stepParamFiltlm(paramList, legList, phaseList, ephysVarName, ...
         %  legs, phases separately
         totalNumPred = numStepParams * numLegs * numPhases;
 
+        % initialize cell array for all variable names (+1 for response
+        %  var: ephysVar)
+        allVarNames = cell(1,totalNumPred + 1);
+
         % each column of matrix is predictor, each row is time point of t
         thisPredMatrix = nan(length(t),totalNumPred);
 
@@ -160,12 +167,20 @@ function stepParamFiltlm(paramList, legList, phaseList, ephysVarName, ...
                         thisPhase = phaseList{l};
                     end
 
+                    thisPredName = sprintf('%s_%s_%s',thisStepParam,...
+                        thisLeg, thisPhase);
+
                     % get param value for this param, leg, phase
                     thisParamVal = stepParam2Vector(legSteps, t, ...
                         thisLeg, thisStepParam, thisPhase);
+%                     thisParamVal = stepParam2VectorSpline(legSteps, t, ...
+%                         moveNotMove, thisLeg, thisStepParam, thisPhase);
                     
                     % add this value to predictor matrix
                     thisPredMatrix(:,counter) = thisParamVal;
+
+                    % add this name to predictor name list
+                    allVarNames{counter} = thisPredName;
 
                     counter = counter + 1; % increment
                 end
@@ -176,8 +191,10 @@ function stepParamFiltlm(paramList, legList, phaseList, ephysVarName, ...
         predMatrix = [predMatrix; thisPredMatrix];
     end
 
+    allVarNames{end} = ephysVarName; % add ephys variable name
+
     % perform multiple linear regression, returns LinearModel object
-    mdl = fitlm(predMatrix, ephysVar);
+    mdl = fitlm(predMatrix, ephysVar, 'VarNames',allVarNames);
 
     % put all inputs into struct
     mdlInputs.paramList = paramList;

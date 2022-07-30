@@ -7,7 +7,7 @@
 %  swing then stance), swing will generally fill forward in time while
 %  stance will generally fill back.
 %
-% Helper function for:
+% Helper function for: stepParamFitlm.m and stepParamStepwiselm.m
 %
 % INPUTS:
 %   legSteps - struct of leg parameter values, output of

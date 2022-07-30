@@ -179,6 +179,6 @@ function updateMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
 %     xlswrite(sprdshtPath, rowArray, 1, writeCell); 
     %  xlswrite doesn't work on mac; use writetable instead
     writetable(rowTable, sprdshtPath, 'Range', writeCell, ...
-        'WriteVariableNames', false);
+        'WriteVariableNames', false, 'WriteMode','replacefile');
 
 end
