@@ -21,29 +21,58 @@
 %   3/29/22 - HHY
 %   5/18/22 - HHY - modify to remove all reps that contain NaNs from being
 %       considered in calculating mean and standard error
+%   8/2/22 - HHY - modify to ignore NaNs in calculating means 
 %
 function [means, stdErrs] = computeMeansStdErrsFictracOpto(reps)
     for i = 1:size(reps,1)
         for j = 1:size(reps,2)
             thisRep = reps{i,j};
 
-            % get indices of all reps that contain NaNs in data (from
-            %  FicTrac dropping, usually)
-            rowsWNan = [];
-            for k = 1:size(thisRep,1)
-                thisRow = thisRep(k,:);
-                if (any(isnan(thisRow)))
-                    rowsWNan = [rowsWNan k];
+            % 5/18/22 version
+%             % get indices of all reps that contain NaNs in data (from
+%             %  FicTrac dropping, usually)
+%             rowsWNan = [];
+%             for k = 1:size(thisRep,1)
+%                 thisRow = thisRep(k,:);
+%                 if (any(isnan(thisRow)))
+%                     rowsWNan = [rowsWNan k];
+%                 end
+%             end
+%             % remove any rows that contain NaNs
+%             thisRep(rowsWNan,:) = [];
+% 
+%             % get mean
+%             means{i,j} = mean(thisRep,1);
+% 
+%             % get std error
+%             stdErrs{i,j} = std(thisRep,0,1) / sqrt(size(thisRep,1));
+
+            thisRepMean = zeros(1,size(thisRep,2));
+            thisRepSEM = zeros(1,size(thisRep,2));
+            % loop over each column
+            for k = 1:size(thisRep,2)
+                thisCol = thisRep(:,k);
+
+                % number of not NaN elements
+                numValEle = sum(~isnan(thisCol));
+
+                % remove NaNs from this column
+                thisCol(isnan(thisCol)) = [];
+
+                % compute mean and std error for this time point
+                % NaN when no valid elements
+                if (numValEle ~=0)
+                    thisRepMean(k) = mean(thisCol);
+                    thisRepSEM(k) = std(thisCol,0,1) / sqrt(numValEle);
+                else
+                    thisRepMean(k) = nan;
+                    thisRepSEM(k) = nan;
                 end
+
             end
-            % remove any rows that contain NaNs
-            thisRep(rowsWNan,:) = [];
 
-            % get mean
-            means{i,j} = mean(thisRep,1);
-
-            % get std error
-            stdErrs{i,j} = std(thisRep,0,1) / sqrt(size(thisRep,1));
+            means{i,j} = thisRepMean;
+            stdErrs{i,j} = thisRepSEM;
         end
     end
 end

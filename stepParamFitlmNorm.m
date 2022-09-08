@@ -34,7 +34,7 @@
 %   7/27/22 - HHY - step parameter vector uses spline interpolation instead
 %       of constant value for whole step
 %
-function stepParamFitlm(paramList, legList, phaseList, ephysVarName, ...
+function stepParamFitlmNorm(paramList, legList, phaseList, ephysVarName, ...
     timeDelay, sampRate, savePath)
 
     % prompt user to select pData files
@@ -192,6 +192,10 @@ function stepParamFitlm(paramList, legList, phaseList, ephysVarName, ...
     end
 
     allVarNames{end} = ephysVarName; % add ephys variable name
+
+    % normalize variables
+    predMatrix = normalize(predMatrix,1,'zscore');
+    ephysVar = normalize(ephysVar,1,'zscore');
 
     % perform multiple linear regression, returns LinearModel object
     mdl = fitlm(predMatrix, ephysVar, 'VarNames',allVarNames);

@@ -31,6 +31,10 @@
 function outVec = stepParam2Vector(legSteps, sampTime, ...
     whichLeg, whichParam, whichPhase)
 
+    % names and indicies for legs
+    legIDs.ind = 1:6; % indicies into raw position matricies for legs
+    legIDs.names = {'R1', 'R2', 'R3', 'L1', 'L2', 'L3'};
+
     % check that whichParam specifies a field of legSteps
     % fields of legSteps
     legStepsFields = fieldnames(legSteps);
@@ -53,12 +57,14 @@ function outVec = stepParam2Vector(legSteps, sampTime, ...
     end
 
     % convert whichLeg to leg index
-    whichLegInd = find(strcmpi(legSteps.legIDs.names, whichLeg));
+%     whichLegInd = find(strcmpi(legSteps.legIDs.names, whichLeg));
+    whichLegInd = find(strcmpi(legIDs.names, whichLeg));
     if isempty(whichLegInd)
         disp('Invalid value for whichLeg. Ending.');
         return;
     end
-    thisLegInd = legSteps.legIDs.ind(whichLegInd);
+%     thisLegInd = legSteps.legIDs.ind(whichLegInd);
+    thisLegInd = legIDs.ind(whichLegInd);
 
 
     % loop through all steps for specified variable

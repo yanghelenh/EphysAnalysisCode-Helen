@@ -93,8 +93,8 @@ function loadTrk2PData(pDataPath, trkFilePath, trkSuffix, refPts, ...
 
         % extract file name without _pData.mat suffix
         % assumes format of date_fly##_cell##_trial##_pData.mat
-        trialFullName = pDataName(1:(end-10));
-%         trialFullName = pDataName(1:(end-5));
+%         trialFullName = pDataName(1:(end-10));
+        trialFullName = pDataName(1:(end-4));
 
         % full path for this pData file
         pDataFullPath = [pDataDirPath pDataName];

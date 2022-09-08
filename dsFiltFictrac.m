@@ -41,6 +41,8 @@
 %
 % UPDATED:
 %   9/11/20 - HHY
+%   8/2/22 - HHY - commented out portion interpolates to 1000 Hz,
+%       regardless of input params (for when fictrac from vid)
 %
 
 function fictracProc = dsFiltFictrac(fictracParams, fictrac)    
@@ -57,6 +59,22 @@ function fictracProc = dsFiltFictrac(fictracParams, fictrac)
     ftSampRate = 1/median(diff(tDS));
 
     dropIndDS = unique(round(fictrac.dropInd ./ fictracParams.dsf));
+
+        % interpolate to 1000 Hz, all position variables are cumulative
+        % temporary fix, when fictrac from vid and not DAQ
+%     tDS = fictrac.t(1):(1/1000):fictrac.t(end);
+%     fwdPosDS = interp1(fictrac.t,fictrac.fwdCumPos,tDS);
+%     yawAngPos = unwrap(fictrac.yawAngPosWrap .* (pi / 180));
+%     yawAngPosDS = interp1(fictrac.t,yawAngPos,tDS);
+%     yawAngPosDS = yawAngPosDS .* (180 / pi);
+%     slidePosDS = interp1(fictrac.t,fictrac.slideCumPos,tDS);
+% 
+%     ftSampRate = 1/median(diff(tDS));
+% 
+%     dropIndLog = zeros(size(fictrac.t));
+%     dropIndLog(fictrac.dropInd) = 1;
+%     dropIndInterp = interp1(fictrac.t,dropIndLog,tDS,'nearest');
+%     dropIndDS = find(dropIndInterp == 1);
     
     % remove any zeros from dropIndDS
     dropIndDS(dropIndDS < 1) = [];
