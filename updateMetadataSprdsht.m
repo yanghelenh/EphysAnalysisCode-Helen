@@ -32,6 +32,8 @@
 %   9/8/20 - HHY - update to correct issue with exptCond for
 %       legFictracEphysIInj prior to 9/8/20
 %   9/15/20 - HHY - fix bug in reading from Table
+%   9/9/22 - HHY - fix bug in writing to Table (somehow new, deleted
+%       previous entries)
 %   
 function updateMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
     inputParams, trialName, preExptData)
@@ -179,6 +181,6 @@ function updateMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
 %     xlswrite(sprdshtPath, rowArray, 1, writeCell); 
     %  xlswrite doesn't work on mac; use writetable instead
     writetable(rowTable, sprdshtPath, 'Range', writeCell, ...
-        'WriteVariableNames', false, 'WriteMode','replacefile');
+        'WriteVariableNames', false);
 
 end

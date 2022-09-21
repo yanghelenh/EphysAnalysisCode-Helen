@@ -1,13 +1,13 @@
 % script for quick plots of average leg steps, FicTrac, iInj data
 
-datPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/AnalyzedData/220825_iInj_cond_200msStart_200msWin_g20yawAngVel';
+datPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/AnalyzedData/220920_iInj_cond_200msStart_200msWin_l-50yawAngVel';
 
 % 
-datNames = {'220614_fly01','220621_fly01'};
+datNames = {'220912_fly01', '220912_fly02'};
 legInd = [1 2 3 4 5 6; 1 2 3 4 5 6];
 
-durInd = 2; % 0.5 s
-ampVal = -50; % amp = 1.3
+durInd = 1; % 0.5 s
+ampVal = 100; % amp = 1.3
 phaseInd = 1; % stance
 
 varName = 'stepLengths';
@@ -19,7 +19,7 @@ yScale = [0 5];
 varName = 'stepDurations';
 yScale = [0 0.5];
 
-xScale = [-5 5.5];
+xScale = [-2.5 3];
 
 figure;
 
@@ -82,7 +82,7 @@ end
 
 %%
 
-yScale = [0 140];
+yScale = [0 160];
 figure;
 
 for i = 1:length(datNames)
