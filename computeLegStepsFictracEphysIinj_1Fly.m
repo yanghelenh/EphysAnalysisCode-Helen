@@ -5,12 +5,18 @@
 %  a single fly.
 % User selects all pData for that fly through the file selection GUI
 % Saves the data as a struct in path specified in function call
+% Has option to shift apparent timing of current injection, to extract
+%  control time periods
 %
 % INPUTS:
 %   amps - vector of all current injection amplitudes (in pA) to consider
 %   durs - vector of all durations of stimulation to consider
 %   bwStimDur - scalar value of time between stimulations to consider, in
 %       secoamps, rep will be stimulation plus this time before and after
+%   iInjShiftTime - in sec, how much to shift actual current injection start
+%       times (neg before, pos after), abs val must be less than bwStimDur;
+%       0 is actual; other values as control comparison for +/- current
+%       injection
 %   savePath - path to folder in which to save data
 %
 % OUTPUTS:
@@ -21,9 +27,11 @@
 %
 % UPDATED:
 %   6/29/22 - HHY
+%   9/22/22 - HHY - add iInjShiftTime input for extracting control 
+%       stimulations
 %
 function computeLegStepsFictracEphysIinj_1Fly(amps, durs, bwStimDur, ...
-    savePath)
+    iInjShiftTime, savePath)
 
     legIDs.ind = 1:6; % indicies into raw position matricies for legs
     legIDs.names = {'R1', 'R2', 'R3', 'L1', 'L2', 'L3'};
@@ -192,6 +200,10 @@ function computeLegStepsFictracEphysIinj_1Fly(amps, durs, bwStimDur, ...
             % get resampling time for legStep
             legStepSampTime = legTrack.t(1):(1/STEP_INTERP_FR):legTrack.t(end);
 
+            % convert iInj to shifted iInj - time offset for stim times,
+            %  for ctrl comparisons
+            iInjShifted = shiftIinjStartTime(iInj, iInjShiftTime);
+
             % loop through all FicTrac variables
             for j = 1:length(fictracVarNames)
                 thisVarName = fictracVarNames{j};
@@ -221,7 +233,7 @@ function computeLegStepsFictracEphysIinj_1Fly(amps, durs, bwStimDur, ...
                     fictracIinj.(thisVarName).repsIinjTimes, ...
                     fictracIinj.(thisVarName).repsPDataNames,...
                     thisVarVal, ...
-                    fictracProc.t, iInj, amps, durs, bwStimDur, ...
+                    fictracProc.t, iInjShifted, amps, durs, bwStimDur, ...
                     pDataName, norm2StimStart);
             end
             
@@ -243,8 +255,8 @@ function computeLegStepsFictracEphysIinj_1Fly(amps, durs, bwStimDur, ...
                         legTrackIinj.(thisVarName).reps(:,:,k), ...
                         legTrackIinj.(thisVarName).repsIinjTimes(:,:,k),...
                         legTrackIinj.(thisVarName).repsPDataNames(:,:,k),...
-                        thisVarVal(:,k), legTrack.t, iInj, amps, durs, ...
-                        bwStimDur, pDataName, false);
+                        thisVarVal(:,k), legTrack.t, iInjShifted, amps, ...
+                        durs, bwStimDur, pDataName, false);
                 end
             end
 
@@ -273,8 +285,8 @@ function computeLegStepsFictracEphysIinj_1Fly(amps, durs, bwStimDur, ...
                     ephysIinj.(thisVarName).reps, ...
                     ephysIinj.(thisVarName).repsIinjTimes, ...
                     ephysIinj.(thisVarName).repsPDataNames,...
-                    thisVarVal, thisVarT, iInj, amps, durs, bwStimDur, ...
-                    pDataName, false);
+                    thisVarVal, thisVarT, iInjShifted, amps, durs, ...
+                    bwStimDur, pDataName, false);
             end
 
             % loop through all legSteps variables
@@ -310,8 +322,8 @@ function computeLegStepsFictracEphysIinj_1Fly(amps, durs, bwStimDur, ...
                             legStepsIinj.(thisVarName).reps(:,:,whichLegInd,o), ...
                             legStepsIinj.(thisVarName).repsIinjTimes(:,:,whichLegInd,o),...
                             legStepsIinj.(thisVarName).repsPDataNames(:,:,whichLegInd,o),...
-                            thisVarVal, legStepSampTime, iInj, amps, durs, ...
-                            bwStimDur, pDataName, false);
+                            thisVarVal, legStepSampTime, iInjShifted, ...
+                            amps, durs, bwStimDur, pDataName, false);
                     end
                 end
             end
@@ -372,8 +384,9 @@ function computeLegStepsFictracEphysIinj_1Fly(amps, durs, bwStimDur, ...
     ephysIinj.durTs = ephysDurTs;
     legStepsIinj.durTs = legStepsDurTs;
 
-    % full path to save data
-    saveFullPath = [savePath filesep flyName '_avgLegStepsFictracEphysIinj.mat'];
+    % full path to save data, include shift time, after s
+    saveFullPath = sprintf('%s%s%s_avgLegStepsFictracEphysIinj_s%d.mat',...
+        savePath, filesep, flyName, iInjShiftTime);
 
     % save data
     save(saveFullPath, 'fictracIinj','legTrackIinj','ephysIinj', ...

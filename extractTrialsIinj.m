@@ -39,6 +39,8 @@
 %
 % UPDATED:
 %   6/29/22 - HHY
+%   9/22/22 - HHY - check to make sure stim start time is not later than
+%       length of trial
 %
 function [reps, repsIinjTimes, repsPDatNames, durTs] = extractTrialsIinj(...
     reps, repsIinjTimes, repsPDatNames, var, t, iInj, amps, durs, ...
@@ -87,6 +89,11 @@ function [reps, repsIinjTimes, repsPDatNames, durTs] = extractTrialsIinj(...
 
         % get index into var corresponding to stimulation start
         stimStartInd = find(t >= iInj.startTimes(i),1,'first');
+
+        % if startTime is too late (not part of trial)
+        if isempty(stimStartInd)
+            continue;
+        end
 
         % index for rep start (stim start with b/w stim period appended)
         repStartInd = stimStartInd - bwStimNumSamps;
