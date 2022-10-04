@@ -10,15 +10,16 @@
 % Half steps that start before iInj but end during are ignored. Half steps
 %  that start during iInj but end after iInj ends are included. Half steps
 %  that start before not iInj time or end during iInj are ignored.
-% Different categories for different injection amplitudes, but pool over
-%  different current injection durations
-% Opterates on single pData file, selected by GUI.
+% Different categories for different injection amplitudes and durations
+% Opterates on single pData file, selected by GUI or specified through
+%  input as full path.
 % 
 % INPUTS:
 %   amps - vector of all current injection amplitudes (in pA) to consider
 %   durs - vector of all durations of stimulation to consider
 %   notIinjTime - time in sec after iInj turns off to not include in not
 %       iInj category
+%   pDataFullPath - full path to pData file, optional input ([] to use GUI)
 %
 % OUTPUTS:
 %   none, but saves vector of category labels and key back into same pData
@@ -27,15 +28,23 @@
 % CREATED: 9/28/22 - HHY
 %
 % UPDATED:
-%   9/28=9/22 - HHY
+%   9/29/22 - HHY
 %
-function sortLegStepsByIInj(amps, durs, notIinjTime)
+function sortLegStepsByIInj(amps, durs, notIinjTime, pDataFullPath)
 
-    % prompt user to select pData files
-    [pDataName, pDataPath] = uigetfile('*.mat', 'Select pData file', ...
-        pDataDir(), 'MultiSelect', 'off');
-    
-    pDataFullPath = [pDataPath pDataName];
+    % use GUI to select pData file
+    if isempty(pDataFullPath)
+        % prompt user to select pData files
+        [pDataName, pDataPath] = uigetfile('*.mat', 'Select pData file', ...
+            pDataDir(), 'MultiSelect', 'off');
+        
+        pDataFullPath = [pDataPath pDataName];
+    else
+        % get pDataName
+        fileSepInd = find(pDataFullPath == filesep, 1, 'last');
+        % pDataName is everything after final filesep
+        pDataName = pDataFullPath((fileSepInd+1):end);
+    end
     
     % get variables in pData file
     pDataMatObj = matfile(pDataFullPath);
