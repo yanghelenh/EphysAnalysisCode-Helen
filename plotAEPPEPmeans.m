@@ -1,7 +1,7 @@
-% plotAEPPEPscatter.m
+% plotAEPPEPmeans.m
 %
-% Function to plot 2D scatterplot of all leg step AEPs or PEPs (user
-%  specified), colored by specified conditions (iInj or opto).
+% Function to plot mean and standard deviation of leg step AEPs or PEPs 
+%  (user specified), colored by specified conditions (iInj or opto).
 % Works on multiple pData files. Select through GUI. Should be for 1 fly.
 %
 % INPUTS:
@@ -16,18 +16,19 @@
 %           iInj
 %   whichPhase - which phase of leg movement, specified as string 'swing'
 %     or 'stance'
-%   alpha - alpha transparency values for each condition, as vector with
-%     each value b/w 0 and 1
 %   
 % OUTPUTS:
 %   none - but produces plot
 %
-% CREATED: 10/2/22 - HHY
+% CREATED: 10/4/22 - HHY
 %
 % UPDATED:
-%   10/4/22 - HHY - now with alpha
+%   10/4/22
 %
-function plotAEPPEPscatter(whichEP, stim, whichPhase, alpha)
+function plotAEPPEPmeans(whichEP, stim, whichPhase)
+
+    legInd = 1:6; % indicies into raw position matricies for legs
+    NUM_LEGS = 6; % number of legs
 
     % prompt user to select pData files
     [pDataFNames, pDataPath] = uigetfile('*.mat', 'Select pData files', ...
@@ -44,44 +45,45 @@ function plotAEPPEPscatter(whichEP, stim, whichPhase, alpha)
     % initialize cell array for keeping track of steps in each category
     % generate key for mapping b/w cell array indices and specific durs and
     %  amps/NDs
-    if (strcmpi(stim.whichStim,'iInj'))
-        numCats = length(stim.durs) * length(stim.amps) + 1;
+    switch lower(stim.whichStim)
+        case 'iinj'
+            numCats = length(stim.durs) * length(stim.amps) + 1;
 
-        % generate key for mapping b/w indices and amps and durs
-        iInjCatAmps = zeros(1,numCats);
-        iInjCatDurs = zeros(1,numCats);
-        % counter index into vectors, skip 1 for 0,0, no iInj
-        counter = 2; 
-
-        % assign amps to indices
-        for i = 1:length(stim.amps)
-            for j = 1:length(stim.durs)
-                iInjCatAmps(counter) = stim.amps(i);
-                iInjCatDurs(counter) = stim.durs(j);
-
-                counter = counter + 1;
+            % generate key for mapping b/w indices and amps and durs
+            iInjCatAmps = zeros(1,numCats);
+            iInjCatDurs = zeros(1,numCats);
+            % counter index into vectors, skip 1 for 0,0, no iInj
+            counter = 2; 
+    
+            % assign amps to indices
+            for i = 1:length(stim.amps)
+                for j = 1:length(stim.durs)
+                    iInjCatAmps(counter) = stim.amps(i);
+                    iInjCatDurs(counter) = stim.durs(j);
+    
+                    counter = counter + 1;
+                end
             end
-        end
-    elseif (strcmpi(stim.whichStim,'opto'))
-        numCats = length(stim.durs) * length(stim.NDs) + 1;
+        case 'opto'
+            numCats = length(stim.durs) * length(stim.NDs) + 1;
 
-        % generate key for mapping b/w indices and NDs and durs
-        optoCatNDs = ones(1,numCats) * -1;
-        optoCatDurs = ones(1,numCats) * -1;
-        % counter index into vectors, skip 1 for -1, -1, no opto
-        counter = 2; 
-
-        % assign NDs, durs to indices
-        for i = 1:length(stim.NDs)
-            for j = 1:length(stim.durs)
-                optoCatNDs(counter) = stim.NDs(i);
-                optoCatDurs(counter) = stim.durs(j);
-
-                counter = counter + 1;
+            % generate key for mapping b/w indices and NDs and durs
+            optoCatNDs = ones(1,numCats) * -1;
+            optoCatDurs = ones(1,numCats) * -1;
+            % counter index into vectors, skip 1 for -1, -1, no opto
+            counter = 2; 
+    
+            % assign NDs, durs to indices
+            for i = 1:length(stim.NDs)
+                for j = 1:length(stim.durs)
+                    optoCatNDs(counter) = stim.NDs(i);
+                    optoCatDurs(counter) = stim.durs(j);
+    
+                    counter = counter + 1;
+                end
             end
-        end
-    else
-        numCats = 1;
+        otherwise
+            numCats = 1;
     end
     allStepXvals = cell(numCats,1); % values for X
     allStepYvals = cell(numCats,1); % values for Y
@@ -256,6 +258,26 @@ function plotAEPPEPscatter(whichEP, stim, whichPhase, alpha)
         end
     end
 
+    % preallocate, matrices for means and stddev
+    xMeans = zeros(length(allStepXvals), NUM_LEGS);
+    yMeans = zeros(length(allStepYvals), NUM_LEGS);
+    xStdDev = zeros(length(allStepXvals), NUM_LEGS);
+    yStdDev = zeros(length(allStepYvals), NUM_LEGS);
+
+    % get means and std dev, by leg
+    for i = 1:length(allStepXvals)
+        for j = 1:NUM_LEGS
+            thisLegX = allStepXvals{i}(allStepLegs{i} == legInd(j));
+            xMeans(i,j) = mean(thisLegX);
+            xStdDev(i,j) = std(thisLegX);
+
+            thisLegY = allStepYvals{i}(allStepLegs{i} == legInd(j));
+            yMeans(i,j) = mean(thisLegY);
+            yStdDev(i,j) = std(thisLegY);
+        end
+    end
+
+
     % PLOTTING
 
     % initialize cell array for legend
@@ -267,12 +289,10 @@ function plotAEPPEPscatter(whichEP, stim, whichPhase, alpha)
     c = colormap('lines');
 
     for i = 1:length(allStepXvals)
-%         scatter(allStepYvals{i},allStepXvals{i},10,...
-%             'MarkerFaceColor', c(i,:), 'MarkerEdgeColor','none',...
-%             'MarkerFaceAlpha', alpha(i));
-                scatter(allStepYvals{i}(allStepLegs{i}==3),allStepXvals{i}(allStepLegs{i}==3),10,...
-            'MarkerFaceColor', c(i,:), 'MarkerEdgeColor','none',...
-            'MarkerFaceAlpha', alpha(i));
+        errorbar(yMeans(i,:), xMeans(i,:), xStdDev(i,:), xStdDev(i,:), ...
+            yStdDev(i,:), yStdDev(i,:), ...
+            'Marker','x', 'LineStyle','none','Color',c(i,:), ...
+            'LineWidth',1.5);
 
         hold on;
 
@@ -304,4 +324,4 @@ function plotAEPPEPscatter(whichEP, stim, whichPhase, alpha)
     set(gca, 'YDir','reverse');
 
     legend(legendStr); % legend 
-end
+end 

@@ -15,6 +15,11 @@
 % 
 % INPUTS:
 %   durs - vector of all durations of stimulation to consider
+%   optoTime - length 2 vector where 1st element is time after opto starts
+%       to begin counting step as during opto (as time in sec relative to
+%       opto start time) and 2nd element is time before opto ends to stop
+%       counting step as during opto (as time in sec relative to opto end
+%       time)
 %   notOptoTime - time in sec after opto stim turns off to not include 
 %       in not opto category
 %   pDataFullPath - full path to pData file, optional input ([] to use GUI)
@@ -28,8 +33,10 @@
 % UPDATED:
 %   9/30/22 - HHY
 %   10/3/22 - HHY - change no stim val to -1 from 0 in key
+%   10/8/22 - HHY - modify to allow selection of subportion of opto stim as
+%       period as steps during opto
 %
-function sortLegStepsByOpto(durs, notOptoTime, pDataFullPath)
+function sortLegStepsByOpto(durs, optoTime, notOptoTime, pDataFullPath)
 
     % use GUI to select pData file
     if isempty(pDataFullPath)
@@ -90,13 +97,16 @@ function sortLegStepsByOpto(durs, notOptoTime, pDataFullPath)
                 % check if this step falls during opto stim, not opto stim,
                 %  or neither
                 % first opto stim start time that's later than step
-                %  start time
-                whichOptoInd = find(opto.stimStartTimes < startTime, ...
-                    1, 'last');
+                %  start time, modified by time during opto step that
+                %  counts
+                whichOptoInd = find((opto.stimStartTimes + optoTime(1)) < ...
+                    startTime, 1, 'last');
                 % steps before opto stim starts will return empty
                 if ~isempty(whichOptoInd)
-                    % end time for this opto step
-                    thisOptoEndTime = opto.stimEndTimes(whichOptoInd);
+                    % end time for this opto step, modified for when during
+                    %  opto stim to consider steps
+                    thisOptoEndTime = opto.stimEndTimes(whichOptoInd) - ...
+                        optoTime(2);
 
                     % get next opto stim start time, if present;
                     % otherwise, set to infinity, for later comparison
@@ -127,7 +137,8 @@ function sortLegStepsByOpto(durs, notOptoTime, pDataFullPath)
                     %  including buffer specified by notOptoTime input
                     % and check that the step ends before the next opto
                     %  stim starts
-                    elseif (startTime >= (thisOptoEndTime + notOptoTime)...
+                    elseif (startTime >= ...
+                            (opto.stimEndTimes(whichOptoInd) + notOptoTime)...
                             && (endTime < nextOptoStartTime))
                         % if yes, then this is assigned index 1 (by
                         % default)
@@ -159,6 +170,7 @@ function sortLegStepsByOpto(durs, notOptoTime, pDataFullPath)
         % generate struct for output
         legStepsByOpto.stepOptoCat = stepOptoCat;
         legStepsByOpto.optoCat = optoCat;
+        legStepsByOpto.optoTime = optoTime;
         legStepsByOpto.notOptoTime = notOptoTime;
 
         % save back into same pData file

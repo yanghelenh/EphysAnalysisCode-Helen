@@ -17,6 +17,11 @@
 % INPUTS:
 %   amps - vector of all current injection amplitudes (in pA) to consider
 %   durs - vector of all durations of stimulation to consider
+%   iInjTime - length 2 vector where 1st element is time after iInj starts
+%       to begin counting step as during iInj (as time in sec relative to
+%       iInj start time) and 2nd element is time before iInj ends to stop
+%       counting step as during iInj (as time in sec relative to iInj end
+%       time)
 %   notIinjTime - time in sec after iInj turns off to not include in not
 %       iInj category
 %   pDataFullPath - full path to pData file, optional input ([] to use GUI)
@@ -29,8 +34,11 @@
 %
 % UPDATED:
 %   9/29/22 - HHY
+%   10/8/22 - HHY - modify to allow selection of subportion of current
+%       injection period as steps during iInj
 %
-function sortLegStepsByIInj(amps, durs, notIinjTime, pDataFullPath)
+function sortLegStepsByIInj(amps, durs, iInjTime, notIinjTime, ...
+    pDataFullPath)
 
     % use GUI to select pData file
     if isempty(pDataFullPath)
@@ -100,12 +108,15 @@ function sortLegStepsByIInj(amps, durs, notIinjTime, pDataFullPath)
                 % check if this step falls during current injection, not
                 %  current injection, or neither
                 % first current injection start time that's later than step
-                %  start time
-                whichIinjInd = find(iInj.startTimes < startTime,1,'last');
+                %  start time, modified by when in iInj steps count
+                whichIinjInd = find((iInj.startTimes + iInjTimes(1)) < ...
+                    startTime,1,'last');
                 % steps before iInj starts will return empty
                 if ~isempty(whichIinjInd)
-                    % end time for this current injection step
-                    thisIinjEndTime = iInj.endTimes(whichIinjInd);
+                    % end time for this current injection step, modified by
+                    %  when in iInj step count
+                    thisIinjEndTime = iInj.endTimes(whichIinjInd) - ...
+                        iInjTimes(2);
 
                     % get next current injection start time, if present;
                     % otherwise, set to infinity, for later comparison
@@ -139,7 +150,8 @@ function sortLegStepsByIInj(amps, durs, notIinjTime, pDataFullPath)
                     % ends, including buffer specified by notIinjTime input
                     % and check that the step ends before the next current
                     %  injection starts
-                    elseif (startTime >= (thisIinjEndTime + notIinjTime)...
+                    elseif (startTime >= ...
+                            (iInj.endTimes(whichIinjInd) + notIinjTime)...
                             && (endTime < nextIinjStartTime))
                         % if yes, then this is assigned index 1 (by
                         % default)
@@ -173,6 +185,7 @@ function sortLegStepsByIInj(amps, durs, notIinjTime, pDataFullPath)
         legStepsByIinj.stepIinjCat = stepIinjCat;
         legStepsByIinj.iInjCatAmps = iInjCatAmps;
         legStepsByIinj.iInjCatDurs = iInjCatDurs;
+        legStepsByIinj.iInjTime = iInjTime;
         legStepsByIinj.notIinjTime = notIinjTime;
 
         % save back into same pData file
