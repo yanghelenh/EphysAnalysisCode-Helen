@@ -109,14 +109,14 @@ function sortLegStepsByIInj(amps, durs, iInjTime, notIinjTime, ...
                 %  current injection, or neither
                 % first current injection start time that's later than step
                 %  start time, modified by when in iInj steps count
-                whichIinjInd = find((iInj.startTimes + iInjTimes(1)) < ...
+                whichIinjInd = find((iInj.startTimes + iInjTime(1)) < ...
                     startTime,1,'last');
                 % steps before iInj starts will return empty
                 if ~isempty(whichIinjInd)
                     % end time for this current injection step, modified by
                     %  when in iInj step count
                     thisIinjEndTime = iInj.endTimes(whichIinjInd) - ...
-                        iInjTimes(2);
+                        iInjTime(2);
 
                     % get next current injection start time, if present;
                     % otherwise, set to infinity, for later comparison

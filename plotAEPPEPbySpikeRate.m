@@ -122,7 +122,7 @@ function plotAEPPEPbySpikeRate(whichEP, bins, tDelay, whichPhase)
                     stepEPY = stepParams.stepPEPY;
             end
             % get step leg and timing info
-            stepWhichLeg = stepParams.whichLeg;
+            stepWhichLeg = stepParams.stepWhichLeg;
             stepTimes = stepParams.stepT;
 
             % if this pData file has current injection, extract only steps

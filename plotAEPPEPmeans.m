@@ -45,45 +45,47 @@ function plotAEPPEPmeans(whichEP, stim, whichPhase)
     % initialize cell array for keeping track of steps in each category
     % generate key for mapping b/w cell array indices and specific durs and
     %  amps/NDs
-    switch lower(stim.whichStim)
-        case 'iinj'
-            numCats = length(stim.durs) * length(stim.amps) + 1;
-
-            % generate key for mapping b/w indices and amps and durs
-            iInjCatAmps = zeros(1,numCats);
-            iInjCatDurs = zeros(1,numCats);
-            % counter index into vectors, skip 1 for 0,0, no iInj
-            counter = 2; 
+    if (isempty(stim.whichStim))
+        numCats = 1;
+    else
+        switch lower(stim.whichStim)
+            case 'iinj'
+                numCats = length(stim.durs) * length(stim.amps) + 1;
     
-            % assign amps to indices
-            for i = 1:length(stim.amps)
-                for j = 1:length(stim.durs)
-                    iInjCatAmps(counter) = stim.amps(i);
-                    iInjCatDurs(counter) = stim.durs(j);
-    
-                    counter = counter + 1;
+                % generate key for mapping b/w indices and amps and durs
+                iInjCatAmps = zeros(1,numCats);
+                iInjCatDurs = zeros(1,numCats);
+                % counter index into vectors, skip 1 for 0,0, no iInj
+                counter = 2; 
+        
+                % assign amps to indices
+                for i = 1:length(stim.amps)
+                    for j = 1:length(stim.durs)
+                        iInjCatAmps(counter) = stim.amps(i);
+                        iInjCatDurs(counter) = stim.durs(j);
+        
+                        counter = counter + 1;
+                    end
                 end
-            end
-        case 'opto'
-            numCats = length(stim.durs) * length(stim.NDs) + 1;
-
-            % generate key for mapping b/w indices and NDs and durs
-            optoCatNDs = ones(1,numCats) * -1;
-            optoCatDurs = ones(1,numCats) * -1;
-            % counter index into vectors, skip 1 for -1, -1, no opto
-            counter = 2; 
+            case 'opto'
+                numCats = length(stim.durs) * length(stim.NDs) + 1;
     
-            % assign NDs, durs to indices
-            for i = 1:length(stim.NDs)
-                for j = 1:length(stim.durs)
-                    optoCatNDs(counter) = stim.NDs(i);
-                    optoCatDurs(counter) = stim.durs(j);
-    
-                    counter = counter + 1;
+                % generate key for mapping b/w indices and NDs and durs
+                optoCatNDs = ones(1,numCats) * -1;
+                optoCatDurs = ones(1,numCats) * -1;
+                % counter index into vectors, skip 1 for -1, -1, no opto
+                counter = 2; 
+        
+                % assign NDs, durs to indices
+                for i = 1:length(stim.NDs)
+                    for j = 1:length(stim.durs)
+                        optoCatNDs(counter) = stim.NDs(i);
+                        optoCatDurs(counter) = stim.durs(j);
+        
+                        counter = counter + 1;
+                    end
                 end
-            end
-        otherwise
-            numCats = 1;
+        end
     end
     allStepXvals = cell(numCats,1); % values for X
     allStepYvals = cell(numCats,1); % values for Y

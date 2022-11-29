@@ -1,9 +1,9 @@
-% plotAEPPEPbyFictrac.m
+% plotAEPPEPbyMultiFictrac.m
 %
 % Function to plot mean and standard deviation of leg AEPs or PEPs (user 
-%  specified), colored by values of a FicTrac variable (yaw, forward, or 
+%  specified), colored by values of two FicTrac variables (yaw, forward, or 
 %  lateral velocity; user specified).
-% User specifies number of bins in which to divide the FicTrac variable or 
+% User specifies number of bins in which to divide the FicTrac variables or 
 %  the edges of the bins. If number of bins specified, divide spike rate 
 %  into that number of bins by percentiles (i.e. equal size bins by number 
 %  of steps). Specify bin edges as n x 2 matrix, where n = num bins, and 
@@ -14,9 +14,10 @@
 % INPUTS:
 %   whichEP - which extreme position to plot (AEP or PEP), specified as
 %     string 'AEP' or 'PEP'
-%   whichFicTrac - which FicTrac variable, specified as string 'yaw',
-%       'fwd', or 'lat'
-%   bins - if scalar, number of bins. If n x 2 matrix, n bins with first
+%   whichFicTrac - which FicTrac variables, specified as cell array of 
+%       strings 'yaw', 'fwd', or 'lat'
+%   bins - as cell array equal to number of FicTrac variables. For each, 
+%       if scalar, number of bins. If n x 2 matrix, n bins with first
 %       column as bin starts and second as bin ends
 %   whichPhase - which phase of leg movement, specified as string 'swing'
 %     or 'stance'
@@ -24,14 +25,12 @@
 % OUTPUTS:
 %   none - but produces plot
 %
-% CREATED: 10/7/22 - HHY
+% CREATED: 10/26/22 - HHY
 %
 % UPDATED:
-%   10/7/22
-%   10/11/22 - HHY - only uses non-stim period for opto as well as iInj
-%       trials
+%   10/26/22
 %
-function plotAEPPEPbyFictrac(whichEP, whichFicTrac, bins, whichPhase)
+function plotAEPPEPbyMultiFictrac(whichEP, whichFicTrac, bins, whichPhase)
     
     legInd = 1:6; % indicies into raw position matricies for legs
     NUM_LEGS = 6; % number of legs
@@ -54,7 +53,10 @@ function plotAEPPEPbyFictrac(whichEP, whichFicTrac, bins, whichPhase)
     allStepXvals = [];
     allStepYvals = [];
     allStepLegs = []; % which leg each step belongs to
-    allStepFictrac = []; % spike rate for each step
+    allStepFictrac = cell(size(whichFicTrac)); % FicTrac val for each step
+
+    % number of FicTrac variables to bin over
+    numVars = length(whichFicTrac);
 
     % loop through all pData files
     for i = 1:numPDataFiles
@@ -140,19 +142,25 @@ function plotAEPPEPbyFictrac(whichEP, whichFicTrac, bins, whichPhase)
             stepWhichLeg = stepParams.stepWhichLeg;
 
             % get step FicTrac info
-            switch lower(whichFicTrac)
-                case 'yaw'
-                    stepFt = stepParams.stepFtYaw;
-                    ftUnits = 'deg/s'; % units for plotting
-                    ftName = 'FicTrac Yaw Velocity'; % for plotting
-                case 'fwd'
-                    stepFt = stepParams.stepFtFwd;
-                    ftUnits = 'mm/s'; % units for plotting
-                    ftName = 'FicTrac Forward Velocity'; % for plotting
-                case 'lat'
-                    stepFt = stepParams.stepFtLat;
-                    ftUnits = 'mm/s'; % units for plotting
-                    ftName = 'FicTrac Lateral Velocity'; % for plotting
+            stepFt = cell(size(whichFicTrac));
+            ftUnits = cell(size(whichFicTrac));
+            ftName = cell(size(whichFicTrac));
+
+            for j = 1:numVars
+                switch lower(whichFicTrac{j})
+                    case 'yaw'
+                        stepFt{j} = stepParams.stepFtYaw;
+                        ftUnits{j} = 'deg/s'; % units for plotting
+                        ftName{j} = 'FicTrac Yaw Velocity'; % for plotting
+                    case 'fwd'
+                        stepFt{j} = stepParams.stepFtFwd;
+                        ftUnits{j} = 'mm/s'; % units for plotting
+                        ftName{j} = 'FicTrac Forward Velocity'; % for plotting
+                    case 'lat'
+                        stepFt{j} = stepParams.stepFtLat;
+                        ftUnits{j} = 'mm/s'; % units for plotting
+                        ftName{j} = 'FicTrac Lateral Velocity'; % for plotting
+                end
             end
 
             % if this pData file has current injection, extract only steps
@@ -163,33 +171,71 @@ function plotAEPPEPbyFictrac(whichEP, whichFicTrac, bins, whichPhase)
                 stepEPY = stepEPY(thisLegStepCat == NO_STIM_IND);
 
                 stepWhichLeg = stepWhichLeg(thisLegStepCat == NO_STIM_IND);
-                stepFt = stepFt(thisLegStepCat == NO_STIM_IND);
+
+                for j = 1:length(whichFicTrac)
+                    stepFt{j} = stepFt{j}(thisLegStepCat == NO_STIM_IND);
+                end
             end
 
             % append these steps to running vector across pData files
             allStepXvals = [allStepXvals; stepEPX];
             allStepYvals = [allStepYvals; stepEPY];
             allStepLegs = [allStepLegs; stepWhichLeg];
-            allStepFictrac = [allStepFictrac; stepFt]; 
+            for j = 1:length(whichFicTrac)
+                allStepFictrac{j} = [allStepFictrac{j}; stepFt{j}];
+            end
         end
     end
 
-    % get bins for grouping EPs by the FicTrac variable
-    if (length(bins) == 1) % if scalar value for number of bins
-        numBins = bins;
-        
-        % get bin edges, using percentiles
-        prcts = linspace(0,100,numBins + 1); % bin edges, as percentiles
-        % convert percentiles to units of the FicTrac variable
-        binEdges = prctile(allStepFictrac,prcts);
-        % convert edges to starts and ends, as separate vectors
-        binStarts = binEdges(1:(end-1));
-        binEnds = binEdges(2:end);
+    % get bins for grouping EPs by the FicTrac variables
+    numBins = 1; % start as default, all data together
+    binStarts = cell(size(whichFicTrac));
+    binEnds = cell(size(whichFicTrac));
+    % number of bins for each FicTrac variable
+    numBinsEach = zeros(size(whichFicTrac));
 
-    else % bin edges specified in function input
-        numBins = size(bins,1);
-        binStarts = bins(:,1);
-        binEnds = bins(:,2);
+    for j = 1:numVars
+        if (length(bins{j}) == 1) % if scalar value for number of bins
+            % number of bins for this FicTrac var
+            thisNumBins = bins{j};
+            numBinsEach(j) = thisNumBins;
+    
+            % total number of bins is multiplied across all FicTrac vars
+            numBins = numBins * thisNumBins;
+            
+            % get bin edges, using percentiles
+            prcts = linspace(0,100,thisNumBins + 1); % bin edges, as percentiles
+            % convert percentiles to units of the FicTrac variable
+            binEdges = prctile(allStepFictrac{j},prcts);
+            % convert edges to starts and ends, as separate vectors
+            binStarts{j} = binEdges(1:(end-1));
+            binEnds{j} = binEdges(2:end);
+    
+        else % bin edges specified in function input
+            thisNumBins = size(bins{j},1);
+            numBinsEach(j) = thisNumBins;
+    
+            numBins = numBins * thisNumBins;
+            binStarts{j} = bins{j}(:,1);
+            binEnds{j} = bins{j}(:,2);
+        end
+    end
+
+    % map number of bins to every bin combination across FicTrac variables
+    % works for 1-3 FicTrac variables
+    binInds = cell(size(whichFicTrac));
+    for j = 1:numVars
+        switch j
+            case 1
+                binInds{j} = repmat(1:numBinsEach(j),1,numBins / ...
+                    numBinsEach(j));
+            case 2
+                binInds{j} = repelem(1:numBinsEach(j),numBins / ...
+                    numBinsEach(j));
+            case 3
+                binInds{j} = repmat(repelem(1:numBinsEach(j),numBinsEach(j)),...
+                    1, numBins/(numBinsEach(j)^2));
+        end
     end
 
     % preallocate, matrices for means and stddev
@@ -201,8 +247,30 @@ function plotAEPPEPbyFictrac(whichEP, whichFicTrac, bins, whichPhase)
     % get means and std dev, by leg
     for i = 1:numBins
         % get indices of steps that belong in this bin
-        thisBinInds = find((allStepFictrac >= binStarts(i)) & ...
-            (allStepFictrac < binEnds(i)));
+        switch numVars
+            case 1
+                thisBinInds = find(...
+                    (allStepFictrac{1} >= binStarts{1}(binInds{1}(i))) & ...
+                    (allStepFictrac{1} < binEnds{1}(binInds{1}(i))) ...
+                    );
+            case 2
+                thisBinInds = find(...
+                    (allStepFictrac{1} >= binStarts{1}(binInds{1}(i))) & ...
+                    (allStepFictrac{1} < binEnds{1}(binInds{1}(i))) & ...
+                    (allStepFictrac{2} >= binStarts{2}(binInds{2}(i))) & ...
+                    (allStepFictrac{2} < binEnds{2}(binInds{2}(i))) ...
+                    );
+            case 3
+                thisBinInds = find(...
+                    (allStepFictrac{1} >= binStarts{1}(binInds{1}(i))) & ...
+                    (allStepFictrac{1} < binEnds{1}(binInds{1}(i))) & ...
+                    (allStepFictrac{2} >= binStarts{2}(binInds{2}(i))) & ...
+                    (allStepFictrac{2} < binEnds{2}(binInds{2}(i))) & ...
+                    (allStepFictrac{3} >= binStarts{3}(binInds{3}(i))) & ...
+                    (allStepFictrac{3} < binEnds{3}(binInds{3}(i)))...
+                    );
+        end
+        
         % get X, Y, whichLeg for steps in this bin
         thisBinX = allStepXvals(thisBinInds);
         thisBinY = allStepYvals(thisBinInds);
@@ -240,8 +308,29 @@ function plotAEPPEPbyFictrac(whichEP, whichFicTrac, bins, whichPhase)
 
         hold on;
 
-        legendStr{i} = sprintf('%.f to %.f %s', binStarts(i), ...
-            binEnds(i), ftUnits);
+        switch numVars
+            case 1    
+                legendStr{i} = sprintf('%s: %.f to %.f %s', ...
+                    whichFicTrac{1}, binStarts{1}(binInds{1}(i)), ...
+                    binEnds{1}(binInds{1}(i)), ftUnits{1});
+            case 2
+                legendStr{i} = sprintf('%s: %.f to %.f %s, %s: %.f to %.f %s', ...
+                    whichFicTrac{1}, binStarts{1}(binInds{1}(i)), ...
+                    binEnds{1}(binInds{1}(i)), ftUnits{1}, ...
+                    whichFicTrac{2}, binStarts{2}(binInds{2}(i)), ...
+                    binEnds{2}(binInds{2}(i)), ftUnits{2} ...
+                    );
+            case 3
+                legendStr{i} = sprintf(...
+                    '%s: %.f to %.f %s, %s: %.f to %.f %s, %s: %.f to %.f %s', ...
+                    whichFicTrac{1}, binStarts{1}(binInds{1}(i)), ...
+                    binEnds{1}(binInds{1}(i)), ftUnits{1}, ...
+                    whichFicTrac{2}, binStarts{2}(binInds{2}(i)), ...
+                    binEnds{2}(binInds{2}(i)), ftUnits{2}, ...
+                    whichFicTrac{3}, binStarts{3}(binInds{3}(i)), ...
+                    binEnds{3}(binInds{3}(i)), ftUnits{3} ...
+                    );
+        end
     end
     % x and y lims
     xlim([-1 1]);
@@ -252,7 +341,7 @@ function plotAEPPEPbyFictrac(whichEP, whichFicTrac, bins, whichPhase)
     ylabel('Body Lengths')
 
     % title of plot: EP and time delay in ms
-    ttlStr = sprintf('%s conditioned on %s', whichEP, ftName);
+    ttlStr = sprintf('%s', whichEP);
     title(ttlStr);
 
     % reverse y axis (x values) so head (neg vals) is at top
