@@ -325,7 +325,7 @@ function determineMoveThresh(pdFile, thresh, minBoutLen, sigmaVel)
     fictracProc.moveEndTimes = moveEndTimes;
     
     % update pData
-    save(pdFile, 'fictrac', 'fictracParams', '-append');
+    save(pdFile, 'fictracProc', 'fictracParams', '-append');
     
     
 % HELPER FUNCTIONS FOR PLOTTING

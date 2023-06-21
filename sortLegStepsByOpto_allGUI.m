@@ -6,15 +6,14 @@
 %  through GUI
 %
 % INPUTS:
-%   amps - vector of all current injection amplitudes (in pA) to consider
 %   durs - vector of all durations of stimulation to consider
-%   iInjTime - length 2 vector where 1st element is time after iInj starts
-%       to begin counting step as during iInj (as time in sec relative to
-%       iInj start time) and 2nd element is time before iInj ends to stop
-%       counting step as during iInj (as time in sec relative to iInj end
+%   optoTime - length 2 vector where 1st element is time after opto starts
+%       to begin counting step as during opto (as time in sec relative to
+%       opto start time) and 2nd element is time before opto ends to stop
+%       counting step as during opto (as time in sec relative to opto end
 %       time)
-%   notIinjTime - time in sec after iInj turns off to not include in not
-%       iInj category
+%   notOptoTime - time in sec after opto stim turns off to not include 
+%       in not opto category
 %
 % OUTPUTS:
 %   none, but saves vector of category labels and key back into same pData

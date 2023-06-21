@@ -10,7 +10,7 @@ pDataFullPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData_2021cshl/2
 ttl = 'DNg13';
 
 %% DNa02
-pDataFullPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData_2021cshl/211104_fly01_cell01_trial01_pData.mat';
+pDataFullPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData_220622/211104_fly01_cell01_trial01_pData.mat';
 % pDataFullPath = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData_2021cshl/201228_fly01_cell01_trial03_pData.mat';
 ttl = 'DNa02';
 
@@ -166,9 +166,10 @@ end
 
 % which parameter, comment out as needed
 
-%thisStepParam = legSteps.stepSpeeds(:,2);
-thisStepParam = legSteps.stepLengths(:,2);
+% thisStepParam = legSteps.stepSpeeds(:,2);
 whichParamStr = 'Stance Step Speed (body lengths/s)';
+thisStepParam = legSteps.stepLengths(:,2);
+whichParamStr = 'Step Lengths (body lengths)';
 thisEphysSpikes = stepSpikeRate;
 thisWhichLeg = legSteps.stepWhichLeg;
 
