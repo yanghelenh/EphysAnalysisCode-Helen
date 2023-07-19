@@ -17,6 +17,6 @@
 function pdDir = pDataDir()
 %     pdDir = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData';
 %     pdDir = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData_2021cshl';
-    pdDir = '/Users/hyang/Dropbox (HMS)/OptoBehaviorAnalysis-Helen/pData';
-%     pdDir = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData_220622';
+%     pdDir = '/Users/hyang/Dropbox (HMS)/OptoBehaviorAnalysis-Helen/pData';
+    pdDir = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/pData_220622';
 end

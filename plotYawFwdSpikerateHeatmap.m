@@ -46,7 +46,7 @@ function plotYawFwdSpikerateHeatmap(tDelay, spikeRateScale)
             fwdVel = fictracProc.fwdVel(moveNotMove.ftMoveInd);
             yawVel = fictracProc.yawAngVel(moveNotMove.ftMoveInd);
 
-            spikeRate = interp1(ephysSpikes.t+tDelay, ephysSpikes.spikeRate, ...
+            spikeRate = interp1(ephysSpikes.t-tDelay, ephysSpikes.spikeRate, ...
                 fictracProc.t);
             spikeRate = spikeRate(moveNotMove.ftMoveInd);
 
@@ -63,6 +63,6 @@ function plotYawFwdSpikerateHeatmap(tDelay, spikeRateScale)
     zDataName = 'spikeRate';
 
     [f, heatmapMat, countsMat] = genHeatmap(allYaw, allFwd, allSpikeRate,...
-        xDataName, yDataName, zDataName, [-500 500 30], [-5 15 30], spikeRateScale, 20,...
+        xDataName, yDataName, zDataName, [-500 500 30], [-5 20 30], spikeRateScale, 20,...
         0, [], flyName);
 end

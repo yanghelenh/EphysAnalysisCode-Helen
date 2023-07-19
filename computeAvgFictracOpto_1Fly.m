@@ -11,6 +11,8 @@
 %   durs - vector of all durations of stimulation to consider
 %   bwStimDur - scalar value of time between stimulations to consider, in
 %       seconds, rep will be stimulation plus this time before and after
+%   flipLR - boolean for whether to flip left-right (true when stim cell is
+%       on left)
 %   savePath - path to folder in which to save data
 %
 % OUTPUTS:
@@ -21,8 +23,9 @@
 %
 % UPDATED:
 %   3/29/22 - HHY
+%   7/10/23 - HHY - updated with flipping left/right
 %
-function computeAvgFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
+function computeAvgFictracOpto_1Fly(NDs, durs, bwStimDur, flipLR, savePath)
 
     % prompt user to select pData files
     [pDataFNames, pDataPath] = uigetfile('*.mat', 'Select pData files', ...
@@ -76,6 +79,12 @@ function computeAvgFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
             yawVel = fictracProc.yawAngVel;
             yawVel(fictracProc.dropInd) = nan;
 
+            % flip yaw and slide if flipping left/right
+            if (flipLR)
+                slideVel = slideVel * -1;
+                yawVel = yawVel * -1;
+            end
+
             % get all reps for this pData for each FicTrac variable
             [fwdVelReps,~] = extractFictracTrialsOpto(fwdVelReps, fwdVel, ...
                 fictracProc.t, opto, NDs, durs, bwStimDur);
@@ -113,6 +122,6 @@ function computeAvgFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
 
     % save data
     save(saveFullPath, 'fwdVelData','slideVelData','yawVelData', 'NDs',...
-        'durs', 'durTs', '-v7.3');
+        'durs', 'durTs', 'flipLR', '-v7.3');
 
 end
