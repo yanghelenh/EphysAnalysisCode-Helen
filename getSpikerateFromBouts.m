@@ -1,30 +1,32 @@
 % getSpikerateFromBouts.m
 %
-% Helper function for saveLegStepParamCond_bouts() that takes in indices of
-%  yaw velocity peaks (peak, start, and end) and returns the leg X and Y
-%  positions aligned to the velocity peak
+% Helper function for saveSpikerate_bouts() that takes in indices of
+%  ephys spiking data and returns the spike rate aligned to the velocity peak
 % To allow averaging over different bouts and the inconsistent frame rate,
 %  interpolate to specified frame rate
 %
 % INPUTS:
 %   ephysSpikes - struct of spiking data
 %   spikerateParams - struct of parameters, directly from
-%     saveLegStepParamCond_bouts()
+%     saveSpikerate_bouts()
 %       maxDuration - time in seconds to consider on each side 
 %       interpFrameRate - frame rate to interpolate to, in Hz
-%   peakInd - indices of frames of bout peaks
-%   boutStartInd - indices of bout starts
-%   boutEndInd - indices of bout ends
+%   peakTime - start times of bout peaks
+%   boutStartTime - start times of bout starts
+%   boutEndTime - end times of bout ends
+%   delay - time offset between behavior and ephys, neg for ephys before
+%       behavior
 %
 % OUTPUTS:
 %   spikerate - numTimePts x numBouts matrix for spikerate for bouts, 
 %       aligned to yaw velocity peak
-%   t - time vector for positions, interpolated
+%   t - time vector for spike rate, interpolated
 %
-% CREATED: 5/12/23 - HHY
+% CREATED: 7/17/23 - HHY
 %
 % UPDATED:
-%   5/14/23 - HHY
+%   7/17/23 - HHY
+%   8/2/23 - HHY - fix comments
 %
 function [spikerate, t] = getSpikerateFromBouts(ephysSpikes, ...
     spikerateParams, peakTime, boutStartTime, boutEndTime, delay)

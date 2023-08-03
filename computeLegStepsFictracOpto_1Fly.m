@@ -25,6 +25,7 @@
 %   5/19/22 - HHY - add tracking of opto stim start time for each rep
 %   5/20/22 - HHY - add tracking of pData name for each rep
 %   8/2/22 - HHY - add leg step parameters
+%   7/19/23 - HHY - fix circular stats
 %
 function computeLegStepsFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
 
@@ -42,6 +43,9 @@ function computeLegStepsFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
     legStepsVarNames = {'stepLengths', 'stepXLengths', 'stepYLengths',...
         'stepDirections', 'stepDurations', 'stepSpeeds', 'stepVelX', ...
         'stepVelY', 'stepAEPX', 'stepAEPY', 'stepPEPX', 'stepPEPY'};
+    % all step parameters that are circular variables - need to use
+    %  circular stats - 6/14/23 - HHY
+    circStepParams = {'stepDirections'};
 
     NUM_LEG_PTS = 11; % number of tracked points in leg video
     NUM_LEGS = 6; % number of legs
@@ -275,7 +279,8 @@ function computeLegStepsFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
         thisVarName = fictracVarNames{i};
         [fictracOpto.(thisVarName).means, ...
             fictracOpto.(thisVarName).stdErrs] = ...
-            computeMeansStdErrsFictracOpto(fictracOpto.(thisVarName).reps);
+            computeMeansStdErrsFictracOpto(fictracOpto.(thisVarName).reps,...
+            false);
     end
 
     % compute means and std errs for leg tracking vars
@@ -287,7 +292,7 @@ function computeLegStepsFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
             [legTrackOpto.(thisVarName).means(:,:,j), ...
                 legTrackOpto.(thisVarName).stdErrs(:,:,j)] = ...
                 computeMeansStdErrsFictracOpto(...
-                legTrackOpto.(thisVarName).reps(:,:,j));
+                legTrackOpto.(thisVarName).reps(:,:,j), false);
         end
     end
 
@@ -299,10 +304,17 @@ function computeLegStepsFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
         for j = 1:NUM_LEGS
             % loop through swing/stance
             for k = 1:NUM_PHASES
-                [legStepsOpto.(thisVarName).means(:,:,j,k),...
-                    legStepsOpto.(thisVarName).stdErrs(:,:,j,k)] = ...
-                    computeMeansStdErrsFictracOpto(...
-                    legStepsOpto.(thisVarName).reps(:,:,j,k));
+                if (strcmpi(thisVarName, circStepParams)) % circular
+                    [legStepsOpto.(thisVarName).means(:,:,j,k),...
+                        legStepsOpto.(thisVarName).stdErrs(:,:,j,k)] = ...
+                        computeMeansStdErrsFictracOpto(...
+                        legStepsOpto.(thisVarName).reps(:,:,j,k), true);
+                else % not circular
+                    [legStepsOpto.(thisVarName).means(:,:,j,k),...
+                        legStepsOpto.(thisVarName).stdErrs(:,:,j,k)] = ...
+                        computeMeansStdErrsFictracOpto(...
+                        legStepsOpto.(thisVarName).reps(:,:,j,k), false);
+                end
             end
         end
     end

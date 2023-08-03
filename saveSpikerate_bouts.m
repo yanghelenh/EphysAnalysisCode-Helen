@@ -7,7 +7,7 @@
 %  step relative to yaw velocity peak
 % Extracts both right and left turns (flips left turns over midline). Any
 %  conditions on yaw or side velocity are considered relative to right
-%  turns, and computed for both. Removes bias in turning before computing
+%  turns, and computed for both. Can remove bias in turning before computing
 %  left and right together
 % Removes peaks that fall during periods of stimulation (opto or I inj),
 %  during periods of not moving, or when FicTrac lost
@@ -17,18 +17,15 @@
 %  flies
 % 
 % INPUTS:
-%   cond - struct of conditions for yaw velocity peak, if multiple 
-%     conditions, treats it as AND
-%       whichParam - cell array (even if 1 element) on which fictracSmo
-%           field to condition on, one for each condition
-%       cond - cell array of strings to condition on, for eval(); same size
-%           as whichParam
-%       turnDur - 2 element vector [minTurnDuration maxTurnDuration] to
-%           specify the min and max duration of the turning bout for it to
-%           be included
-%       minYawThresh - minimum yaw velocity to define start and end of bout
-%   maxNumSteps - number of steps to each side of peak to consider as part
-%       of bout (max bout length is this x2 + 1)
+%   delay - time offset between behavior and ephys, neg for ephys before
+%       behavior
+%   minYawThresh - minimum yaw velocity to define start and end of bout
+%   turnDur - 2 element vector [minTurnDuration maxTurnDuration] to
+%       specify the min and max duration of the turning bout for it to
+%       be included
+%   spikerateParams - struct of parameters on spike rate
+%       maxDuration - time in seconds to consider on each side 
+%       interpFrameRate - frame rate to interpolate to, in Hz
 %   postStimExclDur - additional time, in sec, after stimulation (opto or 
 %       iInj to exclude turning bouts from overlapping with
 %   pDataPath - full path to pData directory
@@ -37,39 +34,30 @@
 %
 % OUTPUTS:
 %   none, but saves output file with name saveFileName in saveFilePath
-%       selLegSteps - struct of aligned step parameters, where each one is 
-%           numSteps x numLegs x 2 x numBouts matrix 
-%       selStanceParams - struct of aligned step parameters during stance
-%           only, where each one is numSteps x numLegs x numBouts matrix
-%       selSwingParams - same as selStanceParams, but for swing
-%       pkSwingStance - numLegs x numBouts matrix for whether peak is
-%           during swing or stance for each leg and bout
-%       stanceParamMeans - struct of means of step parameters during stance
-%           only, where each one is numSteps x numLegs matrix 
-%       stanceParamStd - as stanceParamMeans, but for standard deviation
-%       stanceParamSEM - as stanceParamMeans, but for SEM
-%       stanceParamN - as stanceParamMeans, but number of bouts that 
-%           contributed to each time point
-%       swingParamMeans - as stanceParamMeans, but for swing
-%       swingParamStd - as stanceParamStd, but for swing
-%       swingParamSEM - as stanceParamSEM, but for swing
-%       swingParamN - as stanceParamN, but for swing
+%       allSpikerate - matrix of numTimePts x numLegs x numBouts for 
+%         aligned spike rate
+%       allYaw - matrix of numTimePts x numLegs x numBouts for 
+%         aligned yaw velocity
+%       allFwd - matrix of numTimePts x numLegs x numBouts for 
+%         aligned fwd velocity
 %       numBouts - total number of bouts (max n for stepParam (if no NaNs))
 %       pDataFiles - struct of info on pData files
 %           names - name of each pData file with at least 1 valid step, as
 %               cell array
 %           inds - indices (corresponding to bout indices) that
 %               belong to each pData file, as cell array of vectors
-%       cond - same as INPUT
-%       maxNumSteps - same as INPUT
+%     FROM INPUT: delay, minYawThresh, turnDur, spikerateParams, 
+%       postStimExclDur
 %
-% CREATED: 6/22/23 - HHY
+% CREATED: 7/17/23 - HHY
 %
 % UPDATED:
-%   6/22/23 - HHY
+%   7/17/23 - HHY
+%   8/2/23 - HHY - update comments
 %
-function saveSpikerate_bouts(delay, minYawThresh, turnDur, spikerateParams, ...
-    postStimExclDur, pDataPath, saveFilePath, saveFileName)
+function saveSpikerate_bouts(delay, minYawThresh, turnDur, ...
+    spikerateParams, postStimExclDur, pDataPath, saveFilePath, ...
+    saveFileName)
 
     % prompt user to select pData files
     [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...

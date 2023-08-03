@@ -8,6 +8,7 @@
 %   reps - cell array of size # NDs x # durations, where each element is
 %       matrix of reps where each row is 1 rep and each column is a time 
 %       point
+%   isCirc - boolean for whether to compute circular stats
 %
 % OUTPUTS:
 %   means - cell array of size # NDs x # durations, where each element is
@@ -22,8 +23,9 @@
 %   5/18/22 - HHY - modify to remove all reps that contain NaNs from being
 %       considered in calculating mean and standard error
 %   8/2/22 - HHY - modify to ignore NaNs in calculating means 
+%   7/19/23 - HHY - allow for circular stats
 %
-function [means, stdErrs] = computeMeansStdErrsFictracOpto(reps)
+function [means, stdErrs] = computeMeansStdErrsFictracOpto(reps, isCirc)
     for i = 1:size(reps,1)
         for j = 1:size(reps,2)
             thisRep = reps{i,j};
@@ -62,8 +64,15 @@ function [means, stdErrs] = computeMeansStdErrsFictracOpto(reps)
                 % compute mean and std error for this time point
                 % NaN when no valid elements
                 if (numValEle ~=0)
-                    thisRepMean(k) = mean(thisCol);
-                    thisRepSEM(k) = std(thisCol,0,1) / sqrt(numValEle);
+                    if (~isCirc) % not circular stats
+                        thisRepMean(k) = mean(thisCol);
+                        thisRepSEM(k) = std(thisCol,0,1) / sqrt(numValEle);
+                    else % circular stats
+                        thisColRad = deg2rad(thisCol);
+                        thisRepMean(k) = rad2deg(circ_mean(thisColRad));
+                        thisRepSEM(k) = rad2deg(circ_std(thisColRad)) / ...
+                            sqrt(numValEle);
+                    end
                 else
                     thisRepMean(k) = nan;
                     thisRepSEM(k) = nan;

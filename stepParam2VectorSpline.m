@@ -12,6 +12,7 @@
 % INPUTS:
 %   legSteps - struct of leg parameter values, output of
 %       extractLegStepsFromPData()
+%   initTime - original time vector (needed for free-walking data)
 %   sampTime - times at which to return values
 %   moveNotMove - struct of when fly is moving/not moving, output of
 %       extractLegStepsFromPData()
@@ -29,9 +30,10 @@
 %
 % UPDATED:
 %   7/19/22 - HHY
+%   7/31/23 - HHY - updates to run on free walking data as well
 %
-function outVec = stepParam2VectorSpline(legSteps, sampTime, moveNotMove, ...
-    whichLeg, whichParam, whichPhase)
+function outVec = stepParam2VectorSpline(legSteps, initTime, sampTime, ...
+    moveNotMove, whichLeg, whichParam, whichPhase)
 
     % check that whichParam specifies a field of legSteps
     % fields of legSteps
@@ -55,7 +57,12 @@ function outVec = stepParam2VectorSpline(legSteps, sampTime, moveNotMove, ...
     end
 
     % convert whichLeg to leg index
-    whichLegInd = find(strcmpi(legSteps.legIDs.names, whichLeg));
+    if (isfield(legSteps.legIDs, 'names'))
+        whichLegInd = find(strcmpi(legSteps.legIDs.names, whichLeg));
+    else
+        whichLegInd = find(strcmpi(legSteps.legIDs.name, whichLeg));
+    end
+
     if isempty(whichLegInd)
         disp('Invalid value for whichLeg. Ending.');
         return;
@@ -111,13 +118,18 @@ function outVec = stepParam2VectorSpline(legSteps, sampTime, moveNotMove, ...
     end
 
     % using var vals at step times, interpolate to requested times
-    outVec = interp1(tStepTimes, thisVar, sampTime);
+    outVec = interp1(tStepTimes, thisVar, sampTime, 'spline');
 
     % when fly isn't moving, replace values in outVec with NaN
 
     % get not moving times
-    notMoveStartTimes = moveNotMove.legT(moveNotMove.legNotMoveBout(:,1));
-    notMoveEndTimes = moveNotMove.legT(moveNotMove.legNotMoveBout(:,2));
+    if (isfield(moveNotMove, 'legT'))
+        notMoveStartTimes = moveNotMove.legT(moveNotMove.legNotMoveBout(:,1));
+        notMoveEndTimes = moveNotMove.legT(moveNotMove.legNotMoveBout(:,2));
+    else
+        notMoveStartTimes = initTime(moveNotMove.notMoveBout(:,1));
+        notMoveEndTimes = initTime(moveNotMove.notMoveBout(:,2));
+    end
 
     outVecNotMoveInd = [];
 
