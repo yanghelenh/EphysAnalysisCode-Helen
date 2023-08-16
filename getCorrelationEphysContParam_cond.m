@@ -245,12 +245,14 @@ function getCorrelationEphysContParam_cond(ephysParam, behParams, legs, ...
                 % update logical for all conditions
                 condLog = condLog & thisLog;
             end
+            % invert condition logical
+            condFalseLog = ~condLog;
+            % set every time when condition logcial false to nan
+            thisBehVars(condFalseLog,:) = nan;
+            thisEphysVal(condFalseLog) = nan;
+
         end
-        % invert condition logical
-        condFalseLog = ~condLog;
-        % set every time when condition logcial false to nan
-        thisBehVars(condFalseLog,:) = nan;
-        thisEphysVal(condFalseLog) = nan;
+
 
 
         % remove NaNs
