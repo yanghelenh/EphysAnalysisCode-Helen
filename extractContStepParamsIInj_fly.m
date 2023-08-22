@@ -8,7 +8,7 @@
 %  by the fly's behavior (has to be walking before, during, and
 %  after the stimulation) beyond move/not move and selects no stim periods
 %  as deliberate 'trials' during times of no stim (specifically, the 
-%  middle).
+%  middle). Also, allows filtering based on spike rate during stimulation.
 % Select all pData files for 1 fly through GUI
 % Saves output file with name defined by first pData file (without trial #)
 % 
