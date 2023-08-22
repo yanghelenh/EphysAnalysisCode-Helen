@@ -36,6 +36,8 @@
 %
 % UPDATED:
 %   8/5/23 - HHY
+%   8/21/23 - HHY - fix bug: stepYLengths also needs to be inverted
+%       left/right
 %
 function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
     minWalkFwd, flipLegsLR, pDataPath, saveFileDir)
@@ -50,7 +52,8 @@ function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
 
     % all the step parameters where values need to be * -1 when flipping
     %  legs left right
-    flipStepParams = {'stepVelY', 'stepAEPY', 'stepPEPY', 'stepDirections'};
+    flipStepParams = {'stepYLengths', 'stepVelY', 'stepAEPY', ...
+        'stepPEPY', 'stepDirections'};
 
     % circular step parameters
     circStepParams = {'stepDirections'};
@@ -147,7 +150,6 @@ function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
         if (~any(strcmpi(pDatVarsNames, 'legSteps')) || ...
                 ~any(strcmpi(pDatVarsNames, 'opto')) || ...
                 ~any(strcmpi(pDatVarsNames, 'fictracProc')))
-            rmvInd = [rmvInd; i];
             continue;
         end
 
@@ -494,6 +496,7 @@ function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
     saveFileFullName = [saveFileDir filesep flyName '_legStepsOpto.mat'];
     save(saveFileFullName, 'legStepsOptoAll', 'legStepsOptoMeans', ...
         'legStepsOptoStdDev', 'legStepsOptoSEM', 'condKeyDurs', ...
-        'condKeyNDs', 'optoTime', 'walkTime', 'minWalkFwd', '-v7.3');
+        'condKeyNDs', 'optoTime', 'walkTime', 'minWalkFwd', ...
+        'flipLegsLR', '-v7.3');
 
 end

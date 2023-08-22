@@ -1,16 +1,18 @@
-% plotOptoLegStepParam_allFlies.m
+% plotIInjLegStepParam_allFlies.m
 %
-% Function that takes output files from extractLegStepParamsOpto_fly() and
+% Function that takes output files from extractLegStepParamsIInj_fly() and
 %  generates a plot of the specified legStep param for each leg. Plots 
 %  mean +/- SEM for each fly as well as across flies. Different conditions 
 %  in different columns. Points from the same fly are connected by lines. 
 % Select output files through GUI
 %
+% NOTE: there's something weird about stepDirections - 8/21/23
+%
 % INPUTS:
 %   datDir - directory with output files
 %   whichParam - which step parameter to plot
 %   durs - which duration conditions to plot
-%   NDs - which NDs to plot
+%   amps - which IInj amplitudes to plot
 %   yScale - scale for plots, as [min max]
 %   plotAvg - 'mean' or 'median' for which type of average across flies
 %   plotIndiv - boolean for whether to plot individual flies
@@ -20,13 +22,13 @@
 % OUTPUTS:
 %   none, but generates plot
 %
-% CREATED: 8/5/23 - HHY
+% CREATED: 8/21/23 - HHY
 %
 % UPDATED:
-%   8/5/23 - HHY
+%   8/21/23 - HHY
 %
-function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
-    durs, NDs, yScale, plotAvg, plotIndiv, plotDiff)
+function plotIInjLegStepParam_allFlies(datDir, whichParam, whichPhase,...
+    durs, amps, yScale, plotAvg, plotIndiv, plotDiff)
 
     % legs to subplot indices
     % puts left legs on left, and front legs on top
@@ -34,6 +36,11 @@ function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
 
     % circular step parameters
     circStepParams = {'stepDirections'};
+
+    % all the step parameters where values need to be * -1 when flipping
+    %  legs left right
+    flipStepParams = {'stepYLengths', 'stepVelY', 'stepAEPY', ...
+        'stepPEPY'};
 
     % prompt user to select output files from saveLegStepParamByCond_fly()
     [outputFNames, outputPath] = uigetfile('*.mat', 'Select Step Param files', ...
@@ -64,20 +71,25 @@ function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
         outputFullPath = [outputPath outName];
 
         % load data
-        load(outputFullPath, 'legStepsOptoMeans', 'legStepsOptoSEM', ...
-            'condKeyDurs', 'condKeyNDs');
+        load(outputFullPath, 'legStepsIInjMeans', 'legStepsIInjSEM', ...
+            'condKeyDurs', 'condKeyAmps', 'flipLegsLR');
+
+        % hack to be able to plot 0.5 and 1 sec stim with each other
+        if (condKeyDurs(1) ~=1)
+            condKeyDurs = [1;1;1];
+        end
 
         if (strcmpi(whichPhase, 'stance'))
-            thisMean = legStepsOptoMeans.stance.(whichParam);
-            thisSEM = legStepsOptoSEM.stance.(whichParam);
+            thisMean = legStepsIInjMeans.stance.(whichParam);
+            thisSEM = legStepsIInjSEM.stance.(whichParam);
         elseif (strcmpi(whichPhase, 'swing'))
-            thisMean = legStepsOptoMeans.swing.(whichParam);
-            thisSEM = legStepsOptoSEM.swing.(whichParam);
+            thisMean = legStepsIInjMeans.swing.(whichParam);
+            thisSEM = legStepsIInjSEM.swing.(whichParam);
         end
         
         % if we're plotting difference from no stim condition
         if (plotDiff)
-            noStimInd = find(condKeyNDs == -1);
+            noStimInd = find(condKeyAmps == 0);
             for j = 1:length(noStimInd)
                 thisDur = condKeyDurs(noStimInd(j));
                 sameDurInd = find(condKeyDurs == thisDur);
@@ -86,6 +98,9 @@ function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
                 for k = 1:length(sameDurInd)
                     thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
                         noStimMean;
+                    if (any(strcmpi(whichParam, flipStepParams)) && flipLegsLR)
+                        thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) * -1;
+                    end
                 end
             end
         end
@@ -142,7 +157,7 @@ function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
     % get which conditions to plot (of specified durs and NDs)
     plotCondInd = [];
     for i = 1:length(condKeyDurs)
-        if (any(condKeyDurs(i) == durs) && any(condKeyNDs(i) == NDs))
+        if (any(condKeyDurs(i) == durs) && any(condKeyAmps(i) == amps))
             plotCondInd = [plotCondInd; i];
         end
     end
@@ -152,8 +167,8 @@ function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
     % get labels
     tickLabels = cell(size(plotCondInd));
     for i = 1:length(plotCondInd)
-        tickLabels{i} = sprintf('ND=%.1f, dur=%.1f s', ...
-            condKeyNDs(plotCondInd(i)), condKeyDurs(plotCondInd(i)));
+        tickLabels{i} = sprintf('Amp=%d pA', ...
+            condKeyAmps(plotCondInd(i)));
     end
 
 

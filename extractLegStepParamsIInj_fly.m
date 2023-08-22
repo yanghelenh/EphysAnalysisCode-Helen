@@ -27,6 +27,8 @@
 %   cond - struct of parameters about selecting specific legStep parameter
 %     to condition on. [] for no conditioning
 %       whichParam - string of legStep parameter to condition on
+%       whichPhase - string for which phase of legStep parameter to
+%           condition on ('stance' or 'swing')
 %       cond - cell array of strings to condition on, for eval(), of size
 %           numDurs * numAmps + 1; order: each dur for each amp
 %   flipLegsLR - boolean for whether to flip legs left right
@@ -36,10 +38,10 @@
 % OUTPUTS:
 %   none, but saves output file with following variables:
 %
-% CREATED: 8/4/23 - HHY
+% CREATED: 8/18/23 - HHY
 %
 % UPDATED:
-%   8/5/23 - HHY
+%   8/21/23 - HHY
 %
 function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     minWalkFwd, cond, flipLegsLR, pDataPath, saveFileDir)
@@ -54,7 +56,8 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
 
     % all the step parameters where values need to be * -1 when flipping
     %  legs left right
-    flipStepParams = {'stepVelY', 'stepAEPY', 'stepPEPY', 'stepDirections'};
+    flipStepParams = {'stepYLengths', 'stepVelY', 'stepAEPY', ...
+        'stepPEPY', 'stepDirections'};
 
     % circular step parameters
     circStepParams = {'stepDirections'};
@@ -71,24 +74,24 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
         numPDataFiles = 1;
     end
 
-    % add -1 for no stim condition to NDs
-    if isrow(NDs)
-        NDs = [-1 NDs];
+    % add 0 for no stim condition to amps
+    if isrow(amps)
+        amps = [0 amps];
     else
-        NDs = [-1; NDs];
+        amps = [0; amps];
     end
-    % number of conditions (NDs by durs)
-    numNDs = length(NDs);
+    % number of conditions (amps by durs)
+    numAmps = length(amps);
     numDurs = length(durs);
-    numConds = numNDs * numDurs; 
+    numConds = numAmps * numDurs; 
 
     % key to map conditions to indices
-    condKeyNDs = zeros(numConds, 1);
+    condKeyAmps = zeros(numConds, 1);
     condKeyDurs = zeros(numDurs, 1);
     counter = 1;
-    for i = 1:numNDs
+    for i = 1:numAmps
         for j = 1:numDurs
-            condKeyNDs(counter) = NDs(i);
+            condKeyAmps(counter) = amps(i);
             condKeyDurs(counter) = durs(j);
 
             counter = counter + 1;
@@ -98,31 +101,31 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
 
     % preallocate
     for i = 1:length(stepParamNames)
-        legStepsOptoAll.stance.(stepParamNames{i}) = [];
+        legStepsIInjAll.stance.(stepParamNames{i}) = [];
 
-        legStepsOptoMeans.stance.(stepParamNames{i}) = nan(numConds, ...
+        legStepsIInjMeans.stance.(stepParamNames{i}) = nan(numConds, ...
             NUM_LEGS);
-        legStepsOptoStdDev.stance.(stepParamNames{i}) = nan(numConds, ...
+        legStepsIInjStdDev.stance.(stepParamNames{i}) = nan(numConds, ...
             NUM_LEGS);
-        legStepsOptoSEM.stance.(stepParamNames{i}) = nan(numConds, ...
+        legStepsIInjSEM.stance.(stepParamNames{i}) = nan(numConds, ...
             NUM_LEGS);
 
-        legStepsOptoAll.swing.(stepParamNames{i}) = [];
-        legStepsOptoMeans.swing.(stepParamNames{i}) = nan(numConds, ...
+        legStepsIInjAll.swing.(stepParamNames{i}) = [];
+        legStepsIInjMeans.swing.(stepParamNames{i}) = nan(numConds, ...
             NUM_LEGS);
-        legStepsOptoStdDev.swing.(stepParamNames{i}) = nan(numConds, ...
+        legStepsIInjStdDev.swing.(stepParamNames{i}) = nan(numConds, ...
             NUM_LEGS);
-        legStepsOptoSEM.swing.(stepParamNames{i}) = nan(numConds, ...
+        legStepsIInjSEM.swing.(stepParamNames{i}) = nan(numConds, ...
             NUM_LEGS);
     end
 
-    % add stepWhichLeg, optoDur, optoND to All
-    legStepsOptoAll.stance.stepWhichLeg = [];
-    legStepsOptoAll.swing.stepWhichLeg = [];
-    legStepsOptoAll.stance.optoDur = [];
-    legStepsOptoAll.swing.optoDur = [];
-    legStepsOptoAll.stance.optoND = [];
-    legStepsOptoAll.swing.optoND = [];
+    % add stepWhichLeg, duration, amplitude of stim to All
+    legStepsIInjAll.stance.stepWhichLeg = [];
+    legStepsIInjAll.swing.stepWhichLeg = [];
+    legStepsIInjAll.stance.dur = [];
+    legStepsIInjAll.swing.dur = [];
+    legStepsIInjAll.stance.amp = [];
+    legStepsIInjAll.swing.amp = [];
 
     % loop through all pData files
     for i = 1:numPDataFiles
@@ -146,22 +149,22 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
             pDatVarsNames{j} = pDatVars(j).name;
         end
 
-        % check if this pData file has legSteps, opto, 
-        %  fictracProc structs, if not, skip
-        if (~any(strcmpi(pDatVarsNames, 'legSteps')) || ...
-                ~any(strcmpi(pDatVarsNames, 'opto')) || ...
-                ~any(strcmpi(pDatVarsNames, 'fictracProc')))
-            rmvInd = [rmvInd; i];
-            continue;
-        end
-
         % save fly name as first pDataName's date, fly, cell (19 characters)
         if (i == 1)
             flyName = pDataName(1:19);
         end
 
+        % check if this pData file has legSteps, opto, 
+        %  fictracProc structs, if not, skip
+        if (~any(strcmpi(pDatVarsNames, 'legSteps')) || ...
+                ~any(strcmpi(pDatVarsNames, 'iInj')) || ...
+                ~any(strcmpi(pDatVarsNames, 'fictracProc')))
+            continue;
+        end
+
         % load data
-        load(pDataFullPath, 'legSteps', 'opto', 'fictracProc');
+        load(pDataFullPath, 'legSteps', 'iInj', 'fictracProc', ...
+            'stanceStepParams', 'swingStepParams');
 
         
 
@@ -181,19 +184,21 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
         % allocate tracking for each trial
         % indices of valid trials
         trialInd = []; 
-        % start time of valid trials, include mod by optoTime
+        % start time of valid trials, include mod by iInjTime
         trialStartTime = [];
-        % end time of valid trials, include mod by optoTime
+        % end time of valid trials, include mod by iInjTime
         trialEndTime = [];
         % duration of valid trials
         trialDur = [];
+        % amplitude of valid trials
+        trialAmp = [];
 
-        % loop through each opto stim trial, check if it meets walking
+        % loop through each I inj stim trial, check if it meets walking
         %  criteria
-        for j = 1:length(opto.stimStartTimes)
+        for j = 1:length(iInj.startTimes)
             % start and end times of window where fly needs to be walking
-            thisStartTime = opto.stimStartTimes(j) - walkTime(1);
-            thisEndTime = opto.stimEndTimes(j) + walkTime(2);
+            thisStartTime = iInj.startTimes(j) - walkTime(1);
+            thisEndTime = iInj.endTimes(j) + walkTime(2);
 
             % fwd velocity during this time
             ftLog = (fictracProc.t>=thisStartTime) & ...
@@ -205,10 +210,11 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
             if (~any(thisFwdVel < minWalkFwd))
                 trialInd = [trialInd; j];
                 trialStartTime = [trialStartTime; ...
-                    opto.stimStartTimes(j) + optoTime(1)];
+                    iInj.startTimes(j) + iInjTime(1)];
                 trialEndTime = [trialEndTime; ...
-                    opto.stimEndTimes(j) - optoTime(2)];
-                trialDur = [trialDur; opto.stimCmdDurs(j)];
+                    iInj.endTimes(j) - iInjTime(2)];
+                trialDur = [trialDur; iInj.durs(j)];
+                trialAmp = [trialAmp; iInj.amps(j)];
             end
         end
 
@@ -216,23 +222,25 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
         % allocate tracking for each no stim 'trial'
         % indices of valid trials
         nsTrialInd = []; 
-        % start time of valid trials, include mod by optoTime
+        % start time of valid trials, include mod by iInjTime
         nsTrialStartTime = [];
-        % end time of valid trials, include mod by optoTime
+        % end time of valid trials, include mod by iInjTime
         nsTrialEndTime = [];
         % duration of valid trials
         nsTrialDur = [];
+        % amplitude of valid trials
+        nsTrialAmp = [];
 
         % loop through each no stim 'trial', defined by stim end time to
         %  stim start time
-        for j = 1:(length(opto.stimStartTimes)-1)
-            noStimDur = opto.stimStartTimes(j+1) - opto.stimEndTimes(j);
-            thisStimDur = opto.stimCmdDurs(j);
+        for j = 1:(length(iInj.startTimes)-1)
+            noStimDur = iInj.startTimes(j+1) - iInj.endTimes(j);
+            thisStimDur = iInj.durs(j);
 
             % start time of this trial, as if there were actual stim
             % use stim duration of real stim of same index
             % 'stim' centered during no stim period
-            thisTrialStartTime = opto.stimEndTimes(j) + noStimDur/2 - ...
+            thisTrialStartTime = iInj.endTimes(j) + noStimDur/2 - ...
                 thisStimDur/2;
             % end time
             thisTrialEndTime = thisTrialStartTime + thisStimDur;
@@ -251,16 +259,18 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
             if (~any(thisFwdVel < minWalkFwd))
                 nsTrialInd = [nsTrialInd; j];
                 nsTrialStartTime = [nsTrialStartTime; ...
-                    thisTrialStartTime + optoTime(1)];
+                    thisTrialStartTime + iInjTime(1)];
                 nsTrialEndTime = [nsTrialEndTime; ...
-                    thisTrialEndTime - optoTime(2)];
-                nsTrialDur = [nsTrialDur; opto.stimCmdDurs(j)];
+                    thisTrialEndTime - iInjTime(2)];
+                nsTrialDur = [nsTrialDur; iInj.durs(j)];
+                nsTrialAmp = [nsTrialAmp; 0];
             end
         end
 
         % loop through all steps, add them to output vectors if they fall
         %  during valid trial times (or no stim 'trial' times)
         for j = 1:length(legSteps.stepWhichLeg)
+
             % loop through 2 half steps
             for k = 1:size(legSteps.stepLengths, 2)
                 
@@ -277,9 +287,46 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                     (startTime <= trialEndTime));
                 thisNsTrialInd = find((startTime >= nsTrialStartTime) & ...
                     (startTime <= nsTrialEndTime));
+ 
                 % if this step falls during a trial, get step param and
                 %  trial info and save into outputs
                 if (~isempty(thisTrialInd) || ~isempty(thisNsTrialInd))
+
+
+                    % check if this step meets the cond criteria, when present
+                    if (~isempty(cond))
+                        % get amplitude and duration
+                        % stim trial or no stim trial
+                        if isempty(thisTrialInd) % no stim trial
+                            thisAmp = nsTrialAmp(thisNsTrialInd);
+                            thisDur = nsTrialDur(thisNsTrialInd);
+                        else
+                            thisAmp = trialAmp(thisTrialInd);
+                            thisDur = trialDur(thisTrialInd);
+                        end
+                        % use amplitude and duration and keys to get index
+                        %  into cond
+                        thisCondLog = (condKeyAmps == thisAmp) & ...
+                            (condKeyDurs == thisDur);
+                        thisCond = cond.cond{thisCondLog};
+
+                        % get value of conditioning parameter for this step
+                        % swing or stance
+                        if (strcmpi(cond.whichPhase, 'stance'))
+                            thisCondVal = ...
+                                stanceStepParams.(cond.whichParam)(j);
+                        else
+                            thisCondVal = ...
+                                swingStepParams.(cond.whichParam)(j);
+                        end
+                        
+                        % check if this step meets condition
+                        % if not, go to next half step
+                        if ~(eval(['thisCondVal' thisCond]))
+                            continue;
+                        end
+                    end
+
                     % get whether this is a swing or stance half step
                     thisWhichPhase = legSteps.stepSwingStance(j,k);
 
@@ -299,12 +346,12 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                                 c = 1;
                             end
                             % new leg index, swapping left and right
-                            legStepsOptoAll.stance.stepWhichLeg = ...
-                                [legStepsOptoAll.stance.stepWhichLeg; ...
+                            legStepsIInjAll.stance.stepWhichLeg = ...
+                                [legStepsIInjAll.stance.stepWhichLeg; ...
                                 matchedLegInd(r,c)];
                         else
-                            legStepsOptoAll.stance.stepWhichLeg = ...
-                                [legStepsOptoAll.stance.stepWhichLeg; ...
+                            legStepsIInjAll.stance.stepWhichLeg = ...
+                                [legStepsIInjAll.stance.stepWhichLeg; ...
                                 curLegInd];
                         end
 
@@ -314,39 +361,39 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                             if (flipLegsLR)
                                 % those parameters that need to be adjusted
                                 if (strcmpi(stepParamNames{l}, flipStepParams))
-                                    legStepsOptoAll.stance.(stepParamNames{l}) = ...
-                                        [legStepsOptoAll.stance.(stepParamNames{l}); ...
+                                    legStepsIInjAll.stance.(stepParamNames{l}) = ...
+                                        [legStepsIInjAll.stance.(stepParamNames{l}); ...
                                         legSteps.(stepParamNames{l})(j,k) * -1];
 
                                 % those parameters that don't need to be
                                 %  adjusted
                                 else
-                                    legStepsOptoAll.stance.(stepParamNames{l}) = ...
-                                        [legStepsOptoAll.stance.(stepParamNames{l}); ...
+                                    legStepsIInjAll.stance.(stepParamNames{l}) = ...
+                                        [legStepsIInjAll.stance.(stepParamNames{l}); ...
                                         legSteps.(stepParamNames{l})(j,k)];
                                 end
                             else
-                                legStepsOptoAll.stance.(stepParamNames{l}) = ...
-                                    [legStepsOptoAll.stance.(stepParamNames{l}); ...
+                                legStepsIInjAll.stance.(stepParamNames{l}) = ...
+                                    [legStepsIInjAll.stance.(stepParamNames{l}); ...
                                     legSteps.(stepParamNames{l})(j,k)];
                             end
                         end
 
-                        % opto params to add to step
-                        % ND = -1 if no stim trial
+                        % params to add to step
                         if (~isempty(thisTrialInd)) % stim trial
-                            legStepsOptoAll.stance.optoDur = [...
-                                legStepsOptoAll.stance.optoDur; ...
+                            legStepsIInjAll.stance.dur = [...
+                                legStepsIInjAll.stance.dur; ...
                                 trialDur(thisTrialInd)];
-                            legStepsOptoAll.stance.optoND = [...
-                                legStepsOptoAll.stance.optoND; ...
-                                opto.stimParams.ndFilter];
+                            legStepsIInjAll.stance.amp = [...
+                                legStepsIInjAll.stance.amp; ...
+                                trialAmp(thisTrialInd)];
                         else % not stim trial
-                           legStepsOptoAll.stance.optoDur = [...
-                                legStepsOptoAll.stance.optoDur; ...
+                           legStepsIInjAll.stance.dur = [...
+                                legStepsIInjAll.stance.dur; ...
                                 nsTrialDur(thisNsTrialInd)];
-                            legStepsOptoAll.stance.optoND = [...
-                                legStepsOptoAll.stance.optoND; -1];
+                            legStepsIInjAll.stance.amp = [...
+                                legStepsIInjAll.stance.amp; ...
+                                nsTrialAmp(thisNsTrialInd)];
                         end
 
                     elseif (thisWhichPhase == -1) % swing
@@ -365,12 +412,12 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                                 c = 1;
                             end
                             % new leg index, swapping left and right
-                            legStepsOptoAll.swing.stepWhichLeg = ...
-                                [legStepsOptoAll.swing.stepWhichLeg; ...
+                            legStepsIInjAll.swing.stepWhichLeg = ...
+                                [legStepsIInjAll.swing.stepWhichLeg; ...
                                 matchedLegInd(r,c)];
                         else
-                            legStepsOptoAll.swing.stepWhichLeg = ...
-                                [legStepsOptoAll.swing.stepWhichLeg; ...
+                            legStepsIInjAll.swing.stepWhichLeg = ...
+                                [legStepsIInjAll.swing.stepWhichLeg; ...
                                 curLegInd];
                         end
 
@@ -380,39 +427,39 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                             if (flipLegsLR)
                                 % those parameters that need to be adjusted
                                 if (strcmpi(stepParamNames{l}, flipStepParams))
-                                    legStepsOptoAll.swing.(stepParamNames{l}) = ...
-                                        [legStepsOptoAll.swing.(stepParamNames{l}); ...
+                                    legStepsIInjAll.swing.(stepParamNames{l}) = ...
+                                        [legStepsIInjAll.swing.(stepParamNames{l}); ...
                                         legSteps.(stepParamNames{l})(j,k) * -1];
 
                                 % those parameters that don't need to be
                                 %  adjusted
                                 else
-                                    legStepsOptoAll.swing.(stepParamNames{l}) = ...
-                                        [legStepsOptoAll.swing.(stepParamNames{l}); ...
+                                    legStepsIInjAll.swing.(stepParamNames{l}) = ...
+                                        [legStepsIInjAll.swing.(stepParamNames{l}); ...
                                         legSteps.(stepParamNames{l})(j,k)];
                                 end
                             else
-                                legStepsOptoAll.swing.(stepParamNames{l}) = ...
-                                    [legStepsOptoAll.swing.(stepParamNames{l}); ...
+                                legStepsIInjAll.swing.(stepParamNames{l}) = ...
+                                    [legStepsIInjAll.swing.(stepParamNames{l}); ...
                                     legSteps.(stepParamNames{l})(j,k)];
                             end
                         end
 
-                        % opto params to add to step
-                        % ND = -1 if no stim trial
+                        % params to add to step
                         if (~isempty(thisTrialInd)) % stim trial
-                            legStepsOptoAll.swing.optoDur = [...
-                                legStepsOptoAll.swing.optoDur; ...
+                            legStepsIInjAll.swing.dur = [...
+                                legStepsIInjAll.swing.dur; ...
                                 trialDur(thisTrialInd)];
-                            legStepsOptoAll.swing.optoND = [...
-                                legStepsOptoAll.swing.optoND; ...
-                                opto.stimParams.ndFilter];
+                            legStepsIInjAll.swing.amp = [...
+                                legStepsIInjAll.swing.amp; ...
+                                trialAmp(thisTrialInd)];
                         else % not stim trial
-                           legStepsOptoAll.swing.optoDur = [...
-                                legStepsOptoAll.swing.optoDur; ...
+                           legStepsIInjAll.swing.dur = [...
+                                legStepsIInjAll.swing.dur; ...
                                 nsTrialDur(thisNsTrialInd)];
-                            legStepsOptoAll.swing.optoND = [...
-                                legStepsOptoAll.swing.optoND; -1];
+                            legStepsIInjAll.swing.amp = [...
+                                legStepsIInjAll.swing.amp; ...
+                                nsTrialAmp(thisNsTrialInd)];
                         end
                     end
                 end
@@ -425,46 +472,46 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     
     % loop through all conditions
     for i = 1:numConds
-        thisND = condKeyNDs(i);
+        thisAmp = condKeyAmps(i);
         thisDur = condKeyDurs(i);
 
         % loop through all legs
         for j = 1:NUM_LEGS
             % loop through all step params
             for k = 1:length(stepParamNames)
-                thisStanceValAll = legStepsOptoAll.stance.(stepParamNames{k});
+                thisStanceValAll = legStepsIInjAll.stance.(stepParamNames{k});
                 thisStanceVal = thisStanceValAll(...
-                    (legStepsOptoAll.stance.stepWhichLeg == ...
+                    (legStepsIInjAll.stance.stepWhichLeg == ...
                     legSteps.legIDs.ind(j)) & ...
-                    (legStepsOptoAll.stance.optoDur == thisDur) & ...
-                    (legStepsOptoAll.stance.optoND == thisND));
+                    (legStepsIInjAll.stance.dur == thisDur) & ...
+                    (legStepsIInjAll.stance.amp == thisAmp));
 
-                thisSwingValAll = legStepsOptoAll.swing.(stepParamNames{k});
+                thisSwingValAll = legStepsIInjAll.swing.(stepParamNames{k});
                 thisSwingVal = thisSwingValAll(...
-                    (legStepsOptoAll.swing.stepWhichLeg == ...
+                    (legStepsIInjAll.swing.stepWhichLeg == ...
                     legSteps.legIDs.ind(j)) & ...
-                    (legStepsOptoAll.swing.optoDur == thisDur) & ...
-                    (legStepsOptoAll.swing.optoND == thisND));
+                    (legStepsIInjAll.swing.dur == thisDur) & ...
+                    (legStepsIInjAll.swing.amp == thisAmp));
 
                 % circular stats if circular
                 if any(strcmpi(stepParamNames{k}, circStepParams))
                     % check that there's data, otherwise, will leave value
                     %  as NaN
                     if ~isempty(thisStanceVal)
-                        legStepsOptoMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             circ_mean(thisStanceVal);
-                        legStepsOptoStdDev.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjStdDev.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             circ_std(thisStanceVal);
-                        legStepsOptoSEM.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjSEM.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             circ_std(thisStanceVal) / sqrt(length(thisStanceVal));
                     end
 
                     if ~isempty(thisSwingVal)
-                        legStepsOptoMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             circ_mean(thisSwingVal);
-                        legStepsOptoStdDev.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjStdDev.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             circ_std(thisSwingVal);
-                        legStepsOptoSEM.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjSEM.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             circ_std(thisSwingVal) / sqrt(length(thisSwingVal));
                     end
 
@@ -473,20 +520,20 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                     % check that there's data, otherwise, will leave value
                     %  as NaN
                     if ~isempty(thisStanceVal)
-                        legStepsOptoMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisStanceVal);
-                        legStepsOptoStdDev.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjStdDev.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             std(thisStanceVal);
-                        legStepsOptoSEM.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjSEM.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             std(thisStanceVal) / sqrt(length(thisStanceVal));
                     end
 
                     if ~isempty(thisSwingVal)
-                        legStepsOptoMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisSwingVal);
-                        legStepsOptoStdDev.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjStdDev.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             std(thisSwingVal);
-                        legStepsOptoSEM.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
+                        legStepsIInjSEM.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             std(thisSwingVal) / sqrt(length(thisSwingVal));
                     end
                 end
@@ -495,9 +542,10 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     end
 
     % save data to output file
-    saveFileFullName = [saveFileDir filesep flyName '_legStepsOpto.mat'];
-    save(saveFileFullName, 'legStepsOptoAll', 'legStepsOptoMeans', ...
-        'legStepsOptoStdDev', 'legStepsOptoSEM', 'condKeyDurs', ...
-        'condKeyNDs', 'optoTime', 'walkTime', 'minWalkFwd', '-v7.3');
+    saveFileFullName = [saveFileDir filesep flyName '_legStepsIInj.mat'];
+    save(saveFileFullName, 'legStepsIInjAll', 'legStepsIInjMeans', ...
+        'legStepsIInjStdDev', 'legStepsIInjSEM', 'cond', 'condKeyDurs', ...
+        'condKeyAmps', 'iInjTime', 'walkTime', 'minWalkFwd', ...
+        'flipLegsLR', '-v7.3');
 
 end
