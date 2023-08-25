@@ -1,6 +1,6 @@
 % saveSpikerate_bouts.m
 %
-% Function that saves legStep parameters for turning bouts, defined by yaw
+% Function that saves spike rate for turning bouts, defined by yaw
 %  velocity peaks. User can specify FicTrac conditions that yaw
 %  velocity peaks must meet.
 % Extracts bouts that meet FicTrac conditions and accounts for timing of 

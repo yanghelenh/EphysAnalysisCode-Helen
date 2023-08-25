@@ -42,6 +42,7 @@
 %
 % UPDATED:
 %   8/21/23 - HHY
+%   8/24/23 - HHY - fix circular stats (forgot to convert to radians)
 %
 function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     minWalkFwd, cond, flipLegsLR, pDataPath, saveFileDir)
@@ -498,21 +499,25 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                     % check that there's data, otherwise, will leave value
                     %  as NaN
                     if ~isempty(thisStanceVal)
+                        % convert to radians and back
+                        thisStanceVal = deg2rad(thisStanceVal);
                         legStepsIInjMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_mean(thisStanceVal);
+                            rad2deg(circ_mean(thisStanceVal));
                         legStepsIInjStdDev.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisStanceVal);
+                            rad2deg(circ_std(thisStanceVal));
                         legStepsIInjSEM.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisStanceVal) / sqrt(length(thisStanceVal));
+                            rad2deg(circ_std(thisStanceVal)) / sqrt(length(thisStanceVal));
                     end
 
                     if ~isempty(thisSwingVal)
+                        % convert to radians and back
+                        thisSwingVal = deg2rad(thisSwingVal);
                         legStepsIInjMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_mean(thisSwingVal);
+                            rad2deg(circ_mean(thisSwingVal));
                         legStepsIInjStdDev.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisSwingVal);
+                            rad2deg(circ_std(thisSwingVal));
                         legStepsIInjSEM.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisSwingVal) / sqrt(length(thisSwingVal));
+                            rad2deg(circ_std(thisSwingVal)) / sqrt(length(thisSwingVal));
                     end
 
                 % otherwise, regular stats   

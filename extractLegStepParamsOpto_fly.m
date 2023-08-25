@@ -38,6 +38,7 @@
 %   8/5/23 - HHY
 %   8/21/23 - HHY - fix bug: stepYLengths also needs to be inverted
 %       left/right
+%   8/24/23 - HHY - fix circular stats: forgot to convert to radians
 %
 function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
     minWalkFwd, flipLegsLR, pDataPath, saveFileDir)
@@ -449,21 +450,25 @@ function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
                     % check that there's data, otherwise, will leave value
                     %  as NaN
                     if ~isempty(thisStanceVal)
+                        % convert to radians and back
+                        thisStanceVal = deg2rad(thisStanceVal);
                         legStepsOptoMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_mean(thisStanceVal);
+                            rad2deg(circ_mean(thisStanceVal));
                         legStepsOptoStdDev.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisStanceVal);
+                            rad2deg(circ_std(thisStanceVal));
                         legStepsOptoSEM.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisStanceVal) / sqrt(length(thisStanceVal));
+                            rad2deg(circ_std(thisStanceVal)) / sqrt(length(thisStanceVal));
                     end
 
                     if ~isempty(thisSwingVal)
+                        % convert to radians and back
+                        thisSwingVal = deg2rad(thisSwingVal);
                         legStepsOptoMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_mean(thisSwingVal);
+                            rad2deg(circ_mean(thisSwingVal));
                         legStepsOptoStdDev.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisSwingVal);
+                            rad2deg(circ_std(thisSwingVal));
                         legStepsOptoSEM.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
-                            circ_std(thisSwingVal) / sqrt(length(thisSwingVal));
+                            rad2deg(circ_std(thisSwingVal)) / sqrt(length(thisSwingVal));
                     end
 
                 % otherwise, regular stats   
