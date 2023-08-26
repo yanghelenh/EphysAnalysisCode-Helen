@@ -80,6 +80,7 @@ function plotSpikerateCond_bouts(datDir, numCond, condNames)
 
             % compute mean for this fly
             thisMean = mean(allSpikerate, 2) - subMean; 
+%             thisMean = mean(allSpikerate, 2);
             thisSEM = std(allSpikerate, [], 2) / sqrt(numBouts);
 
             % save this mean and SEM
