@@ -25,7 +25,7 @@
 % UPDATED:
 %   8/5/23 - HHY
 %
-function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
+function allFliesMeans = plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
     durs, NDs, yScale, plotAvg, plotIndiv, plotDiff)
 
     % legs to subplot indices
@@ -68,7 +68,11 @@ function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
             'condKeyDurs', 'condKeyNDs');
 
         if (strcmpi(whichPhase, 'stance'))
-            thisMean = legStepsOptoMeans.stance.(whichParam);
+%             if(any(strcmpi(whichParam, circStepParams)))
+%                 thisMean = wrapTo360(legStepsOptoMeans.stance.(whichParam));
+%             else
+                thisMean = legStepsOptoMeans.stance.(whichParam);
+%             end
             thisSEM = legStepsOptoSEM.stance.(whichParam);
         elseif (strcmpi(whichPhase, 'swing'))
             thisMean = legStepsOptoMeans.swing.(whichParam);
@@ -84,8 +88,17 @@ function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
 
                 noStimMean = thisMean(noStimInd(j),:);
                 for k = 1:length(sameDurInd)
-                    thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
-                        noStimMean;
+%                     thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
+%                         noStimMean;
+
+                    if(any(strcmpi(whichParam, circStepParams)))
+                        thisMean(sameDurInd(k),:) = wrapTo180(...
+                            thisMean(sameDurInd(k),:) - ...
+                            noStimMean); 
+                    else
+                        thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
+                            noStimMean;
+                    end
                 end
             end
         end

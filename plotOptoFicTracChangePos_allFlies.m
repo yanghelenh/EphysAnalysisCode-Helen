@@ -26,7 +26,7 @@
 % UPDATED:
 %   8/23/23 - HHY
 %
-function plotOptoFicTracChangePos_allFlies(datDir, whichParam, ...
+function allFliesMeans = plotOptoFicTracChangePos_allFlies(datDir, whichParam, ...
     whichND, plotTimes, yScale)
 
     % prompt user to select output files from extractFicTracOpto_fly()

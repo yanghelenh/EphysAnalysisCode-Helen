@@ -27,7 +27,7 @@
 % UPDATED:
 %   8/21/23 - HHY
 %
-function plotIInjLegStepParam_allFlies(datDir, whichParam, whichPhase,...
+function allFliesMeans = plotIInjLegStepParam_allFlies(datDir, whichParam, whichPhase,...
     durs, amps, yScale, plotAvg, plotIndiv, plotDiff)
 
     % legs to subplot indices
@@ -40,7 +40,7 @@ function plotIInjLegStepParam_allFlies(datDir, whichParam, whichPhase,...
     % all the step parameters where values need to be * -1 when flipping
     %  legs left right
     flipStepParams = {'stepYLengths', 'stepVelY', 'stepAEPY', ...
-        'stepPEPY'};
+        'stepPEPY', 'stepDirections'};
 
     % prompt user to select output files from saveLegStepParamByCond_fly()
     [outputFNames, outputPath] = uigetfile('*.mat', 'Select Step Param files', ...
@@ -96,10 +96,18 @@ function plotIInjLegStepParam_allFlies(datDir, whichParam, whichPhase,...
 
                 noStimMean = thisMean(noStimInd(j),:);
                 for k = 1:length(sameDurInd)
-                    thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
-                        noStimMean;
-                    if (any(strcmpi(whichParam, flipStepParams)) && flipLegsLR)
-                        thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) * -1;
+%                     thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
+%                         noStimMean;
+%                     if (any(strcmpi(whichParam, flipStepParams)) && flipLegsLR)
+%                         thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) * -1;
+%                     end
+                    if(any(strcmpi(whichParam, circStepParams)))
+                        thisMean(sameDurInd(k),:) = wrapTo180(...
+                            thisMean(sameDurInd(k),:) - ...
+                            noStimMean); 
+                    else
+                        thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
+                            noStimMean;
                     end
                 end
             end

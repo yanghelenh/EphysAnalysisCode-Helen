@@ -26,7 +26,7 @@
 % UPDATED:
 %   8/23/23 - HHY
 %
-function plotIInjFicTracChangePos_allFlies(datDir, whichParam, ...
+function allFliesMeans = plotIInjFicTracChangePos_allFlies(datDir, whichParam, ...
     whichAmp, plotTimes, yScale)
 
     % prompt user to select output files from extractFicTracIInj_fly()

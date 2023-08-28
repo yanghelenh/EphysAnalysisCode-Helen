@@ -39,6 +39,8 @@
 %   8/21/23 - HHY - fix bug: stepYLengths also needs to be inverted
 %       left/right
 %   8/24/23 - HHY - fix circular stats: forgot to convert to radians
+%   8/26/23 - HHY - fix bug in inverting step parameter values when
+%       flipping left/right
 %
 function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
     minWalkFwd, flipLegsLR, pDataPath, saveFileDir)
@@ -312,7 +314,7 @@ function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
                             % if we need to flip legs left/right
                             if (flipLegsLR)
                                 % those parameters that need to be adjusted
-                                if (strcmpi(stepParamNames{l}, flipStepParams))
+                                if any(strcmpi(stepParamNames{l}, flipStepParams))
                                     legStepsOptoAll.stance.(stepParamNames{l}) = ...
                                         [legStepsOptoAll.stance.(stepParamNames{l}); ...
                                         legSteps.(stepParamNames{l})(j,k) * -1];
@@ -378,7 +380,7 @@ function extractLegStepParamsOpto_fly(durs, NDs, optoTime, walkTime, ...
                             % if we need to flip legs left/right
                             if (flipLegsLR)
                                 % those parameters that need to be adjusted
-                                if (strcmpi(stepParamNames{l}, flipStepParams))
+                                if any(strcmpi(stepParamNames{l}, flipStepParams))
                                     legStepsOptoAll.swing.(stepParamNames{l}) = ...
                                         [legStepsOptoAll.swing.(stepParamNames{l}); ...
                                         legSteps.(stepParamNames{l})(j,k) * -1];
