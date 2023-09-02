@@ -23,7 +23,7 @@
 % UPDATED:
 %   8/24/23 - HHY
 %
-function plotSpikerateCond_bouts(datDir, numCond, condNames)
+function allCondYaw = plotSpikerateCond_bouts(datDir, numCond, condNames)
     
     % preallocate 
     % cell array where each element will be numFlies x numTPts matrix of
@@ -35,6 +35,7 @@ function plotSpikerateCond_bouts(datDir, numCond, condNames)
     %  across flies
     allCondMeans = cell(numCond,1);
     allCondSEMs = cell(numCond,1);
+    allCondYaw = zeros(numCond,1);
 
     % cell arrays where each element is cell array of output file
     %  names/paths
@@ -60,6 +61,7 @@ function plotSpikerateCond_bouts(datDir, numCond, condNames)
         % preallocate
         thisCondMean = [];
         thisCondSEM = [];
+        thisCondMeanPeakYaw = [];
 
         % loop through all flies
         for j = 1:numFlies
@@ -73,7 +75,8 @@ function plotSpikerateCond_bouts(datDir, numCond, condNames)
             outputFullPath = [outputPath outName];
 
             % load data file
-            load(outputFullPath, 'allSpikerate', 't', 'numBouts');
+            load(outputFullPath, 'allSpikerate', 't', 'numBouts', ...
+                'allPeakYaw', 'allYaw');
 
             % get mean subtracted
             subMean = mean(mean(allSpikerate(10:40,:),2));
@@ -83,15 +86,29 @@ function plotSpikerateCond_bouts(datDir, numCond, condNames)
 %             thisMean = mean(allSpikerate, 2);
             thisSEM = std(allSpikerate, [], 2) / sqrt(numBouts);
 
+%             thisMean = nan(size(allYaw,1),1);
+%             thisSEM = nan(size(allYaw,1),1);
+%             for k = 1:size(allYaw,1)
+%                 thisRow = allYaw(k,:);
+%                 thisRow(isnan(thisRow)) = [];
+%                 thisMean(k) = mean(thisRow);
+%                 thisSEM(k) = std(thisRow) / sqrt(length(thisRow));
+%             end
+
+
+            thisMeanYaw = mean(allPeakYaw);
+
             % save this mean and SEM
             thisCondMean = [thisCondMean, thisMean];
             thisCondSEM = [thisCondSEM, thisSEM];
+            thisCondMeanPeakYaw = [thisCondMeanPeakYaw, thisMeanYaw];
         end
 
         % get mean and SEM across flies for this condition
         allCondMeans{i} = mean(thisCondMean,2);
         allCondSEMs{i} = std(thisCondMean, [], 2) / ...
             sqrt(size(thisCondMean,2));
+        allCondYaw(i) = mean(thisCondMeanPeakYaw);
 
         % save mean and SEM for each fly
         allFlyMeans{i} = thisCondMean;
@@ -114,7 +131,12 @@ function plotSpikerateCond_bouts(datDir, numCond, condNames)
             'LineWidth',2, 'Color', c(i,:));
     end
 
+    yScale = ylim;
+    line([0 0], yScale, 'Color', 'k', 'LineWidth', 1);
+    line([t(1) t(end)], [0 0], 'Color', 'k', 'LineWidth', 1);
+
     xlabel('Time relative to yaw peak (s)');
     ylabel('Spike rate (Hz)');
+%     ylabel('Yaw Velocity (deg/s)');
     legend(legendInd,condNames);
 end
