@@ -15,12 +15,13 @@
 %   yScalePeakT - limits of y axis for plot of peak times
 %
 % OUTPUTS:
-%   none, but generates plot
+%   none, but generates plots
 %
 % CREATED: 9/1/23 - HHY
 %
 % UPDATED:
 %   9/1/23 - HHY
+%   9/6/23 - HHY - add time of center of mass plot
 %
 function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
     yScalePeakT)
@@ -32,6 +33,9 @@ function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
     % cell array where each element will be numCells length vector of peak
     %  times
     allCellsPeakT = cell(numCond,1);
+    % cell array where each element will be numCells length vector of
+    %  center of mass times
+    allCellsCOMtime = cell(numCond,1);
 
     % cell array where each element will be 1 x numTPts vector of mean/SEM
     %  across flies
@@ -39,6 +43,8 @@ function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
     allCondSEMsXC = cell(numCond,1);
     allCondMeanPeakT = zeros(numCond,1);
     allCondSEMsPeakT = zeros(numCond,1);
+    allCondMeanCOMtime = zeros(numCond,1);
+    allCondSEMsCOMtime = zeros(numCond,1);
     allCondLagsT = cell(numCond,1);
 
     % loop across number of conditions, get data files for each cell
@@ -60,6 +66,8 @@ function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
         % preallocate
         thisCondXC = [];
         thisCondPeakT = zeros(numCells,1);
+        % time of center of mass
+        thisCondCOMtime = zeros(numCells,1);
 
         % loop through all cells
         for j = 1:numCells
@@ -69,7 +77,7 @@ function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
             else
                 outName = outputFNames;
             end
-            
+
             outputFullPath = [outputPath outName];
 
             % load data file
@@ -81,11 +89,39 @@ function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
             % save this cross-corr
             thisCondXC = [thisCondXC, xCorr];
 
+            % calculate time of center of mass (time at which half max in
+            %  cumulative sum occurs)
+            % remove NaNs
+            nanLog = isnan(xCorr);
+            noNanXCorr = xCorr;
+            noNanXCorr(nanLog) = [];
+            noNanLagsT = lagsT;
+            noNanLagsT(nanLog) = [];
+
+            % minimum subtracted xCorr, so not dealing with negatives
+            minSubXCorr = noNanXCorr - min(noNanXCorr);
+            % cumulative sum
+            xCorrCumSum = cumsum(minSubXCorr);
+            % half max of cumulative sum
+            halfMax = xCorrCumSum(end)/2;
+            % find indices that bracket half-max value
+            ind1 = find(halfMax >= xCorrCumSum, 1, 'last');
+            ind2 = find(halfMax < xCorrCumSum, 1, 'first');
+
+            % linear interpolation b/w 2 indices that bracket half-max
+            %  value, best estimate of time of half max
+            tHalfMax = interp1([xCorrCumSum(ind1), xCorrCumSum(ind2)], ...
+                [noNanLagsT(ind1), noNanLagsT(ind2)], halfMax, 'linear');
+
+            % save this time of center of mass
+            thisCondCOMtime(j) = tHalfMax;
+
         end
 
         % crosscorr, peakT, lagsT across cond
         allCellsXC{i} = thisCondXC;
         allCellsPeakT{i} = thisCondPeakT;
+        allCellsCOMtime{i} = thisCondCOMtime;
         allCondLagsT{i} = lagsT;
 
         % get mean and SEM
@@ -105,6 +141,9 @@ function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
 %         allCondSEMsXC{i} = std(thisCondXC,[],2) / sqrt(numCells);
         allCondMeanPeakT(i) = mean(thisCondPeakT);
         allCondSEMsPeakT(i) = std(thisCondPeakT) / sqrt(numCells);
+
+        allCondMeanCOMtime(i) = mean(thisCondCOMtime);
+        allCondSEMsCOMtime(i) = std(thisCondCOMtime) / sqrt(numCells);
     end
 
     % plot autocorr
@@ -168,4 +207,37 @@ function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
     ylim(yScalePeakT);
 
     ylabel('Peak Time (s)');
+
+
+    % plot center of mass times
+    figure;
+    hold on;
+
+    xVec = 1:numCond;
+
+    for i = 1:numCond
+        % plot individual cells as points
+        numCells = length(allCellsCOMtime{i});
+        % get repmat xVec for this number of cells
+        repXVec = repmat(xVec(i),numCells,1);
+
+        plot(repXVec, allCellsCOMtime{i}, ...
+            '.','Marker','x','LineWidth',0.5, 'Color', c(1,:));
+
+        % plot mean +/- SEM across flies
+        errorbar(xVec(i),allCondMeanCOMtime(i),allCondSEMsCOMtime(i),...
+            '_','LineWidth', 2, 'CapSize', 0, 'Color', c(2,:));
+    end
+
+    xScale = xlim;
+    xScale(1) = xScale(1) - (0.5 * (xVec(end)-xVec(1)));
+    xScale(2) = xScale(2) + (0.5 * (xVec(end)-xVec(1)));
+    xlim(xScale);
+
+    xticks(xVec);
+    xticklabels(condNames);
+
+    ylim(yScalePeakT);
+
+    ylabel('Time of Center of Mass (s)');
 end
