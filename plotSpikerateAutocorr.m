@@ -21,7 +21,7 @@
 % UPDATED:
 %   9/1/23 - HHY
 %
-function fwhmDiff = plotSpikerateAutocorr(datDir, numCond, condNames, yScaleAC)
+function plotSpikerateAutocorr(datDir, numCond, condNames, yScaleAC)
 
     % preallocate 
     % cell array where each element will be numCells x numTPts matrix of
@@ -91,8 +91,6 @@ function fwhmDiff = plotSpikerateAutocorr(datDir, numCond, condNames, yScaleAC)
         allCondMeanFWHM(i) = mean(thisCondFWHM);
         allCondSEMsFWHM(i) = std(thisCondFWHM) / sqrt(numCells);
     end
-
-    fwhmDiff = allCellsFWHM{2} - allCellsFWHM{1};
 
     % plot autocorr
     figure;
