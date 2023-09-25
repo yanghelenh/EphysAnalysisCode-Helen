@@ -25,7 +25,7 @@
 % UPDATED:
 %   8/5/23 - HHY
 %
-function allFliesMeans = plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
+function plotOptoLegStepParam_allFlies(datDir, whichParam, whichPhase,...
     durs, NDs, yScale, plotAvg, plotIndiv, plotDiff)
 
     % legs to subplot indices

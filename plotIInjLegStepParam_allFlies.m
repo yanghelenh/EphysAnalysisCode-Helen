@@ -27,7 +27,7 @@
 % UPDATED:
 %   8/21/23 - HHY
 %
-function allFliesMeans = plotIInjLegStepParam_allFlies(datDir, whichParam, whichPhase,...
+function plotIInjLegStepParam_allFlies(datDir, whichParam, whichPhase,...
     durs, amps, yScale, plotAvg, plotIndiv, plotDiff)
 
     % legs to subplot indices

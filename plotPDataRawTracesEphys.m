@@ -10,9 +10,10 @@
 jPot = 13; % junction potential (to be subtracted from Vm)
 Vmscale = [-65 -45];
 fwdVelScale = [-5 15];
-yawVelScale = [-300 300];
+yawVelScale = [-200 200];
 legScale = [-1 1];
-xScale = [65 70];
+xScale = [62.5 64.5];
+% xScale = [127.25 129.25];
 
 
 %% load data

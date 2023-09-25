@@ -69,6 +69,7 @@
 %
 % UPDATED:
 %   8/11/23 - HHY
+%   9/25/23 - HHY - add handling of circular parameters
 %
 function [behVals, ephysVals, ephysValsNorm] = ...
     getCorrelationEphysContParam_cond_fly(ephysParam, behParams, ...
@@ -358,12 +359,38 @@ function [behVals, ephysVals, ephysValsNorm] = ...
 
     % if multiple behavioral variables, get projection to equal weighting
     if iscell(behParams)
-        % get coefficients
-        coeffs = ones(length(behParams), 1) * (1/length(behParams));
-        behVals1D = getLinProj(behVals, coeffs);
-    % otherwise, just original behavioral value    
+        % handle circular parameter correctly
+        % assume all behParams are circular
+        if any(strcmpi(behParams, 'stepDirection'))
+            numParams = length(behParams);
+
+            meanSubBehVals = behVals;
+            for i = 1:numParams
+                thisBehVals = behVals(:,i);
+                meanSubBehVals(:,i) = thisBehVals - ...
+                    rad2deg(circ_mean(deg2rad(thisBehVals)));
+            end
+
+            behVals1D = wrapTo180(rad2deg(circ_mean(deg2rad(meanSubBehVals), [], 2)));
+
+        % not circular parameter, project    
+        else
+            % get coefficients
+            coeffs = ones(length(behParams), 1) * (1/length(behParams));
+            behVals1D = getLinProj(behVals, coeffs);
+        end
+    % otherwise,    
     else
-        behVals1D = behVals;
+        % just original behavioral value 
+%         behVals1D = behVals;
+
+        % deal with circular parameters appropriately
+        if strcmpi(behParams,'stepDirection')
+            behVals1D = behVals - rad2deg(circ_mean(deg2rad(behVals)));
+        else      
+            % mean subtracted behavioral value
+            behVals1D = behVals - mean(behVals);
+        end
     end
 
     % normalize spike rate
