@@ -21,7 +21,8 @@
 % UPDATED:
 %   9/1/23 - HHY
 %
-function plotSpikerateAutocorr(datDir, numCond, condNames, yScaleAC)
+function plotSpikerateAutocorr(datDir, numCond, condNames, yScaleAC, ...
+    yScaleFWHM)
 
     % preallocate 
     % cell array where each element will be numCells x numTPts matrix of
@@ -86,8 +87,20 @@ function plotSpikerateAutocorr(datDir, numCond, condNames, yScaleAC)
         allCondLagsT{i} = lagsT;
 
         % get mean and SEM
-        allCondMeanAC{i} = mean(thisCondAC,2);
-        allCondSEMsAC{i} = std(thisCondAC,[],2) / sqrt(numCells);
+        thisCondACMean = zeros(size(thisCondAC,1),1);
+        thisCondACSEM = zeros(size(thisCondAC,1),1);
+        for j = 1:size(thisCondAC,1)
+            thisTCondAC = thisCondAC(j,:);
+            thisTCondAC(isnan(thisTCondAC)) = [];
+            thisCondACMean(j) = mean(thisTCondAC);
+            thisCondACSEM(j) = std(thisTCondAC) / sqrt(length(thisTCondAC));
+        end
+
+
+%         allCondMeanAC{i} = mean(thisCondAC,2);
+        allCondMeanAC{i} = thisCondACMean;
+%         allCondSEMsAC{i} = std(thisCondAC,[],2) / sqrt(numCells);
+        allCondSEMsAC{i} = thisCondACSEM;
         allCondMeanFWHM(i) = mean(thisCondFWHM);
         allCondSEMsFWHM(i) = std(thisCondFWHM) / sqrt(numCells);
     end
@@ -148,4 +161,5 @@ function plotSpikerateAutocorr(datDir, numCond, condNames, yScaleAC)
     xticklabels(condNames);
 
     ylabel('FWHM (s)');
+    ylim(yScaleFWHM);
 end

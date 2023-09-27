@@ -17,7 +17,7 @@
 % UPDATED:
 %   9/3/23 - HHY
 %
-function plotSpikesStepComboPhase(datDir, whichDelays)
+function plotSpikesStepComboPhase(datDir, whichDelays, yScale)
 
     % initialize
     allFliesSpikes = [];
@@ -96,6 +96,7 @@ function plotSpikesStepComboPhase(datDir, whichDelays)
         xlabel('Step phase (deg)');
 
         xlim([0 360]);
+        ylim(yScale);
 
         title(sprintf('Delay = %.2f',whichDelays(i)));
     end

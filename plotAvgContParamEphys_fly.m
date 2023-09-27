@@ -11,6 +11,10 @@
 %   numBins - number of bins in x (spike rate)
 %   xRange - range of x values to plot and bin across. As 2 element vector 
 %       for start and end
+%   minNumVals - minimum number of values that must be in bin for it to
+%       have a value
+%   isCirc - is the plotted parameter circular? boolean
+%   yScale - scale of y-axis
 %
 % OUTPUTS:
 %   none, but generates plot
