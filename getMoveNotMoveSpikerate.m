@@ -6,6 +6,15 @@
 %  from same fly but separates data from different flies)
 %
 % INPUTS:
+%   cond - struct of conditions that time points have to meet to be
+%     included. Multiple conditions are AND. [] if no conditions
+%       whichParam - cell array (even if 1 element) on which fictracProc or
+%           legStepsCont fields to condition on. Use 'stepFwdBool' for
+%           boolean of whether step is moving backwards or forwards. 
+%       legs - cell array for which leg for legStepsCont and 'stepFwdBool'.
+%         [] for FicTrac elements
+%       cond - cell array of strings to condition on, for eval(); same size
+%           as whichParam
 %   transExclDur - additional time, in sec, before and after not
 %     transition to exclude from consideration. Length 2 vector for before
 %     and after, respectively
@@ -24,8 +33,9 @@
 %
 % UPDATED:
 %   9/1/23 - HHY
+%   9/29/23 - HHY - add ability to condition on step and fictrac parameters
 %
-function getMoveNotMoveSpikerate(transExclDur, postStimExclDur, ...
+function getMoveNotMoveSpikerate(cond, transExclDur, postStimExclDur, ...
     pDataFNames, pDataPath, saveFileName, saveFileDir)
 
     DSF = 20; % downsampling factor
@@ -117,16 +127,19 @@ function getMoveNotMoveSpikerate(transExclDur, postStimExclDur, ...
 
         % load variables from pData
         if (any(strcmpi(pDatVarsNames, 'iInj')))
-            load(pDataFullPath, 'moveNotMove', 'ephysSpikes', 'iInj');
+            load(pDataFullPath, 'moveNotMove', 'ephysSpikes', 'iInj',...
+                'legSteps', 'legStepsCont', 'fictracProc');
         else
-            load(pDataFullPath, 'moveNotMove', 'ephysSpikes');
+            load(pDataFullPath, 'moveNotMove', 'ephysSpikes', ...
+                'legSteps', 'legStepsCont', 'fictracProc');
         end
 
         % downsample spike rate
         thisT = downsample(ephysSpikes.t, DSF);
         
-        thisEphysVal = interp1(ephysSpikes.t, ephysSpikes.spikeRate, ...
+        thisMoveEphysVal = interp1(ephysSpikes.t, ephysSpikes.spikeRate, ...
             thisT, 'linear');
+        thisNotMoveEphysVal = thisMoveEphysVal;
 
         % set current injection times to NaN
         if (any(strcmpi(pDatVarsNames, 'iInj')))
@@ -140,8 +153,50 @@ function getMoveNotMoveSpikerate(transExclDur, postStimExclDur, ...
                     (thisT < iInjEndTimes(j));
 
                 % set to NaN
-                thisEphysVal(thisIInjLog) = nan;
+                thisMoveEphysVal(thisIInjLog) = nan;
+                thisNotMoveEphysVal(thisIInjLog) = nan;
             end
+        end
+
+        % set points for moving ephys that don't meet conditions to NaN
+        if ~isempty(cond)
+            % initialize logical to track which points meet condition
+            % loop through all conditions
+            condLog = true(size(thisT));
+            for j = 1:length(cond.whichParam)
+                % check which data structures conditions belong to
+                % check first for stepFwdBool, as it's not a field of any
+                %  struct
+                if (strcmpi(cond.whichParam{j}, 'stepFwdBool'))
+                    thisFwdLog = getStepFwdLogical(legSteps, thisT,...
+                        cond.legs{j});
+                    if ~(eval(cond.cond{j})) % if target is false, invert
+                        thisLog = ~thisFwdLog;
+                    else
+                        thisLog = thisFwdLog;
+                    end
+                % if FicTrac    
+                elseif isfield(fictracProc,cond.whichParam{j})
+                    thisFT = interp1(fictracProc.t, ...
+                        fictracProc.(cond.whichParam{j}), thisT, ...
+                        'spline');
+                    thisLog = eval(['thisFT' cond.cond{j}]); 
+                % if step parameter    
+                elseif isfield(legStepsCont,cond.whichParam{j})
+                    thisLegInd = legSteps.legIDs.ind(strcmpi(legSteps.legIDs.names, ...
+                        cond.legs{j}));
+                    thisStep = interp1(legStepsCont.t, ...
+                        legStepsCont.(cond.whichParam{j})(:,thisLegInd), ...
+                        thisT, 'spline');
+                    thisLog = eval(['thisStep' cond.cond{j}]);
+                end
+                % update logical for all conditions
+                condLog = condLog & thisLog;
+            end
+            % invert condition logical
+            condFalseLog = ~condLog;
+            % set every time when condition logcial false to nan
+            thisMoveEphysVal(condFalseLog) = nan;
         end
 
         
@@ -161,7 +216,7 @@ function getMoveNotMoveSpikerate(transExclDur, postStimExclDur, ...
             % if there are any valid points, grab and add to tracking
             %  vector
             if any(thisBoutLog)
-                thisSpikerate = thisEphysVal(thisBoutLog);
+                thisSpikerate = thisMoveEphysVal(thisBoutLog);
                 moveSpikerate = [moveSpikerate; thisSpikerate];
             end
         end
@@ -182,7 +237,7 @@ function getMoveNotMoveSpikerate(transExclDur, postStimExclDur, ...
             % if there are any valid points, grab and add to tracking
             %  vector
             if any(thisBoutLog)
-                thisSpikerate = thisEphysVal(thisBoutLog);
+                thisSpikerate = thisNotMoveEphysVal(thisBoutLog);
                 notMoveSpikerate = [notMoveSpikerate; thisSpikerate];
             end
         end
@@ -209,5 +264,5 @@ function getMoveNotMoveSpikerate(transExclDur, postStimExclDur, ...
     % save output file
     saveFileFullName = [saveFileDir filesep saveFileName '.mat'];
     save(saveFileFullName, 'meanSpikerate', 'allFlyNames',...
-        'transExclDur', 'postStimExclDur', '-v7.3');
+        'transExclDur', 'postStimExclDur', 'cond', '-v7.3');
 end

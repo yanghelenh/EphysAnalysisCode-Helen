@@ -23,7 +23,7 @@
 %   9/1/23 - HHY
 %   9/6/23 - HHY - add time of center of mass plot
 %
-function plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
+function allCellsPeakT = plotEphysBehXCorr(datDir, numCond, condNames, yScaleXC, ...
     yScalePeakT)
 
     % preallocate 

@@ -59,11 +59,9 @@ function plotAvgContParamEphys_fly(datDir, avg, indivFlies, numBins, ...
         else
             outName = corrEphysFNames;
         end
-        
-        outputFullPath = [corrEphysPath outName];
 
         % load data from cond_bout file
-        fullFilePath = [corrEphysPath filesep corrEphysFNames{i}];
+        fullFilePath = [corrEphysPath filesep outName];
     
         % load variables
         load(fullFilePath, 'ephysVals', 'ephysValsNorm', 'behVals1D', ...

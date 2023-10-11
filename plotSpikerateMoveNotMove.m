@@ -47,7 +47,7 @@ function diffSpikerate = plotSpikerateMoveNotMove(datDir)
 
     % plot for each individual fly
     plot(xVec, meanSpikerate, ...
-        'Marker', 'x','LineWidth',0.5, 'Color', c(1,:));
+        'Marker', '.','LineWidth',0.5, 'Color', c(1,:));
 
     % plot mean across flies
     errorbar(xVec, meanAllFlies, SEMAllFlies, ...
@@ -72,7 +72,7 @@ function diffSpikerate = plotSpikerateMoveNotMove(datDir)
 
     % plot for each individual fly
     plot(ones(length(diffSpikerate),1), diffSpikerate, ...
-        '.', 'Marker', 'x','LineWidth',0.5, 'Color', c(1,:));
+        '.', 'Marker', '.','LineWidth',0.5, 'Color', c(1,:));
 
     % plot mean across flies
     errorbar(1, meanDiff, semDiff, ...
