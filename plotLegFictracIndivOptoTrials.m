@@ -123,11 +123,11 @@ function plotLegFictracIndivOptoTrials(paramNames, dataDir, whichTrials,...
                     sampRate = round(1/median(diff(thisTime)));
                     % moving average smoothing; only if no NaNs (doesn't
                     % work if NaNs)
-                    if (any(isnan(thisValNoSmo)))
+%                     if (any(isnan(thisValNoSmo)))
                         thisVal = thisValNoSmo;
-                    else
-                        thisVal = moveAvgFilt(thisValNoSmo,sampRate,avgWin);  
-                    end
+%                     else
+%                         thisVal = moveAvgFilt(thisValNoSmo,sampRate,avgWin);  
+%                     end
                 case 'legTrack'
                     % for leg parameters, convert to matrix, each leg as
                     %  column
@@ -150,6 +150,7 @@ function plotLegFictracIndivOptoTrials(paramNames, dataDir, whichTrials,...
 
             % if this is a FicTrac parameter, add x axis line
             xScale = xlim;
+            xlim([-0.2 0.8]);
             line(xScale,[0 0], 'Color', 'k');
 
             % yScale for this parameter

@@ -9,12 +9,13 @@
 %% plotting parameters
 jPot = 13; % junction potential (to be subtracted from Vm)
 Vmscale = [-70 -50];
-fwdVelScale = [-5 15];
-yawVelScale = [-200 200];
+fwdVelScale = [-5 20];
+yawVelScale = [-150 150];
 legScale = [-1 1];
 % xScale = [62.5 64.5];
 % xScale = [127.25 129.25];
-xScale = [155 157];
+% xScale = [155 157];
+xScale = [187 189];
 
 
 %% load data

@@ -183,7 +183,7 @@ function computeLegFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
         thisVarName = fictracVarNames{i};
         [fictracOpto.(thisVarName).means, ...
             fictracOpto.(thisVarName).stdErrs] = ...
-            computeMeansStdErrsFictracOpto(fictracOpto.(thisVarName).reps);
+            computeMeansStdErrsFictracOpto(fictracOpto.(thisVarName).reps,false);
     end
 
     % compute means and std errs for leg tracking vars
@@ -195,7 +195,7 @@ function computeLegFictracOpto_1Fly(NDs, durs, bwStimDur, savePath)
             [legTrackOpto.(thisVarName).means(:,:,j), ...
                 legTrackOpto.(thisVarName).stdErrs(:,:,j)] = ...
                 computeMeansStdErrsFictracOpto(...
-                legTrackOpto.(thisVarName).reps(:,:,j));
+                legTrackOpto.(thisVarName).reps(:,:,j),false);
         end
     end
 
