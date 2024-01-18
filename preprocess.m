@@ -54,6 +54,8 @@
 %   3/28/22 - HHY - update to enable preprocessing of opto stim trials
 %   6/28/22 - HHY - update to enable preprocessing of current injection
 %       trials
+%   1/16/24 - HHY - update to enable preprocessing of visual stimulus
+%       trials
 %
 function preprocess()
 
@@ -188,6 +190,9 @@ function preprocess()
                             opto = [];
                         end
 
+                        % visstim - doesn't exist here
+                        visstim = [];
+
                         % update metadata spreadsheet
                         updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
                             flyData, inputParams, 'cellAttachedTrial', ...
@@ -196,11 +201,12 @@ function preprocess()
                         % save pData
                         writePData(pDataDir(), settings, exptInfo, ...
                             preExptData, inputParams, ephysData, ephysMeta,...
-                            fictrac, leg, opto, iInj, 'cellAttachedTrial'); 
+                            fictrac, leg, opto, iInj, visstim, ...
+                            'cellAttachedTrial'); 
 
                         % clear variables specific to this trial
                         clearvars inputParams rawData rawOutput
-                        clearvars ephysData ephysMeta fictrac leg optp
+                        clearvars ephysData ephysMeta fictrac leg opto visstim
                     % otherwise, must have been ephysRecording, skip
                     %  preprocessing (only applies to data pre 7/16/20)
                     else
@@ -222,6 +228,7 @@ function preprocess()
                         leg = [];
                         opto = [];
                         iInj = [];
+                        visstim = [];
                         
                         % update metadata spreadsheet
                         updateMetadataSprdsht(sprdshtFullPath, exptInfo, ...
@@ -231,7 +238,8 @@ function preprocess()
                         % save pData
                         writePData(pDataDir(), settings, exptInfo, ...
                             preExptData, inputParams, ephysData, ephysMeta,...
-                            fictrac, leg, opto, iInj, 'cellAttachedTrial'); 
+                            fictrac, leg, opto, iInj, visstim,...
+                            'cellAttachedTrial'); 
                         
                         % clear variables specific to this trial
                         clearvars inputParams ephysData ephysMeta
@@ -339,6 +347,18 @@ function preprocess()
                     opto = [];
                 end
 
+                % visual stimulus controlled in closed loop with voltage
+                %  injection from DAQ
+                if (contains(inputParams.exptCond, 'visstim', ...
+                        'IgnoreCase',true) && contains(...
+                        inputParams.exptCond,'VInj','IgnoreCase',true))
+                    visstim = preprocessVisstimVInj(daqData, daqTime, ...
+                        inputParams);
+                else % so writePData() has input
+                    visstim = [];
+                end
+
+
                 % update metadata spreadsheet - different types for
                 % behavior only vs. ephys
                 % for ephys experiments
@@ -356,7 +376,7 @@ function preprocess()
                 % save pData
                 writePData(pDataDir(), settings, exptInfo, ...
                     preExptData, inputParams, ephysData, ephysMeta,...
-                    fictrac, leg, opto, iInj, trialName);  
+                    fictrac, leg, opto, iInj, visstim, trialName);  
                 
                 % clear variables specific to this trial
                 clearvars inputParams rawData rawOutput

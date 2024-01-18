@@ -16,6 +16,7 @@
 %
 % Updated: 
 %   9/14/20 - HHY
+%   11/23/23 - HHY - print name of pData file to command line
 %
 
 function selectDroppedFicTrac()
@@ -28,6 +29,8 @@ function selectDroppedFicTrac()
     
     % full path to pData file
     fullPath = [filePath fileName];
+
+    fprintf('Operating on %s\n', fileName);
     
     % load pData file
     load(fullPath, 'exptCond');

@@ -121,10 +121,12 @@ function allFliesMeans = plotOptoFicTracChangePos_allFlies(datDir, whichParam, .
     end
 
     % plot individual flies
-    plot(xVec, allFliesMeans, ...
-        'Marker', '.','LineWidth',0.5, 'Color', c(1,:));
-
-    hold on;
+    for i = 1:numFlies
+        plot(xVec, allFliesMeans(i,:), ...
+            'Marker', '.','LineWidth',0.5, 'Color', c(1,:));
+    
+        hold on;
+    end
 
     % plot mean across flies
     plot(xVec, meanAllFlies, ...
