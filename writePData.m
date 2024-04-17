@@ -41,7 +41,8 @@
 %   9/24/21 - HHY - add _pData suffix to all pData file names
 %   3/28/22 - HHY - add opto data struct
 %   6/28/22 - HHY - add iInj data struct
-%   1/16/23 - HHY - add visstim data struct
+%   1/16/24 - HHY - add visstim data struct
+%   1/30/24 - HHY - add legFictracEphysOpto and ephysOpto experiment types
 %
 function writePData(pDataDir, settings, exptInfo, preExptData, ...
     inputParams, ephysData, ephysMeta, fictrac, leg, opto, iInj, ...
@@ -104,6 +105,13 @@ function writePData(pDataDir, settings, exptInfo, preExptData, ...
         case {'visstimLegFictracOptoVInj'}
             save(pDataFileName, 'exptCond','fictrac', 'leg', 'opto', ...
                 'visstim', 'settings', 'inputParams', '-v7.3');
+        case {'legFictracEphysOpto'}
+            save(pDataFileName, 'exptCond', 'ephysData', 'ephysMeta', ...
+                'preExptData', 'fictrac', 'leg', 'opto', ...
+                'settings', 'inputParams', '-v7.3');
+        case {'ephysOpto'}
+            save(pDataFileName, 'exptCond', 'ephysData', 'ephysMeta', ...
+                'preExptData', 'opto', 'settings', 'inputParams', '-v7.3');
     end
     
     fprintf('\nSaved %s\n', trialName);

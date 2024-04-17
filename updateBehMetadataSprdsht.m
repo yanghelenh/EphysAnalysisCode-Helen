@@ -25,6 +25,7 @@
 %
 % UPDATED:
 %   3/28/22 - HHY
+%   1/18/24 - HHY - update to account for different opto stims
 %   
 function updateBehMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
     inputParams, trialName)
@@ -78,7 +79,12 @@ function updateBehMetadataSprdsht(sprdshtPath, exptInfo, flyData, ...
         ndFilter = inputParams.optoStimParams.ndFilter;
         bpFilter = inputParams.optoStimParams.stimBPfilter;
         allStimDurs = num2str(inputParams.optoStimParams.allStimDurs);
-        durBwStims = inputParams.optoStimParams.durBwStims;
+        if isfield(inputParams.optoStimParams, 'durBwStims')
+            durBwStims = inputParams.optoStimParams.durBwStims;
+        elseif isfield(inputParams.optoStimParams, 'durBfStims')
+            durBwStims = inputParams.optoStimParams.durBfStims + ...
+                inputParams.optoStimParams.durAfStims;
+        end
     else
         ndFilter = 'N/A';
         bpFilter = 'N/A';

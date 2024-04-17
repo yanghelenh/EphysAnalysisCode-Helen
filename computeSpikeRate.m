@@ -15,6 +15,7 @@
 %
 % UPDATED:
 %   9/14/20 - HHY
+%   1/30/24 - HHY - spike rate empty vector if no spikes
 %
 function spikeRate = computeSpikeRate(spikeInd, t)
     
@@ -29,6 +30,10 @@ function spikeRate = computeSpikeRate(spikeInd, t)
     
     % interpolate vector to same size as time vector, instead of same size
     %  as spikeInd vector
-    spikeRate = interp1(spikeTimes, invIntSpikeInt, t);
+    try
+        spikeRate = interp1(spikeTimes, invIntSpikeInt, t);
+    catch ME
+        spikeRate = [];
+    end
     
 end

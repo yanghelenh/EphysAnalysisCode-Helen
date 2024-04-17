@@ -33,6 +33,11 @@
 %   duration to make averaging in later analyses easier. Saves this as well
 %   as user-specified parameters about stimulation.
 %
+% On visual stimuli controlled in closed loop with voltage injection:
+%  Extracts visual stimulus start and stop times and velocities. Saves
+%   metadata about visual stimulus pattern and control
+%  
+%
 % All info saved into pData.mat file, which is saved into user specified
 %  folder (for all pData.mat files).
 %
@@ -353,7 +358,7 @@ function preprocess()
                         'IgnoreCase',true) && contains(...
                         inputParams.exptCond,'VInj','IgnoreCase',true))
                     visstim = preprocessVisstimVInj(daqData, daqTime, ...
-                        inputParams);
+                        inputParams, daqOutput);
                 else % so writePData() has input
                     visstim = [];
                 end
