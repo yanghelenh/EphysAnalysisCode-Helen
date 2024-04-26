@@ -29,8 +29,12 @@
 %           end relative to opto start, end relative to opto end]
 %           Negative for time before, positive for time after during window
 %           defined by walkTime for the trial to be included
+%       invAll - boolean for whether to condition on inversion of all
+%           specified conditions ie: ~(A AND B) (not ~A AND ~B)
 %   flipLR - boolean for whether to flip left/right asymmetric vars
 %   pDataPath - path to folder containing pData files
+%   pDataFNames - cell array of pData file names or [] if select through
+%       GUI
 %   saveFileDir - full path to folder in which to save output file
 %   
 % OUTPUTS:
@@ -48,9 +52,10 @@
 %   4/11/24 - HHY - fix bug where to round number of frames per trial
 %       instead of using ceil, which was sensitive to very small changes in
 %       ifi
+%   4/22/24 - HHY - add invAll to conditioning, and pDataFNames to inputs
 %
 function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
-    cond, flipLR, pDataPath, saveFileDir)
+    cond, flipLR, pDataPath, pDataFNames, saveFileDir)
 
     % names of all fictrac parameters to save
     ftParamNames = {'fwdVel', 'slideVel', 'yawAngVel', 'yawAngSpd', ...
@@ -62,8 +67,12 @@ function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
     flipParams = {'slideVel', 'yawAngVel', 'slideCumPos', 'yawAngCumPos'};
     
     % prompt user to select pData files
-    [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
-        'Select pData files', pDataPath, 'MultiSelect', 'on');
+    if isempty(pDataFNames)
+        [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
+            'Select pData files', pDataPath, 'MultiSelect', 'on');
+    else
+        pDataDirPath = pDataPath;
+    end
     
     % if only 1 pData file selected, not cell array; make sure loop still
     %  works 
@@ -137,7 +146,8 @@ function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
         end
 
         % load data
-        load(pDataFullPath, 'opto', 'fictracProc', 'visstim', 'legSteps');
+        load(pDataFullPath, 'opto', 'fictracProc', 'visstim', ...
+            'fictracSmo', 'legSteps');
 
         % get trial length, in frames
         % also, duration of optomotor during trial
@@ -215,12 +225,22 @@ function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
                         % if forward walking met for all time points
                         thisCondMet = all(thisLog);
                     else % condition on FicTrac parameter
+                        % condition on fictracProc
                         % the FicTrac parameter to condition on
                         thisCondParam = fictracProc.(cond.whichParam{k});
     
                         % FicTrac parameter values during this time
                         ftLog = (fictracProc.t>=thisCondStartTime) & ...
                             (fictracProc.t<=thisCondEndTime);
+
+                        % condition on fictracSmo
+%                         % the FicTrac parameter to condition on
+%                         thisCondParam = fictracSmo.(cond.whichParam{k});
+%     
+%                         % FicTrac parameter values during this time
+%                         ftLog = (fictracSmo.t>=thisCondStartTime) & ...
+%                             (fictracSmo.t<=thisCondEndTime);
+
                         thisFTVal = thisCondParam(ftLog);
     
                         % check if criteria met
@@ -234,6 +254,11 @@ function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
                     % as soon as one condition is false, this will always
                     %  be false
                     meetsCond = meetsCond && thisCondMet; 
+                end
+
+                % if invert all conditioning
+                if (cond.invAll)
+                    meetsCond = ~meetsCond;
                 end
             end
 

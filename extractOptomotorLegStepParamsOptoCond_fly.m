@@ -30,8 +30,12 @@
 %           end relative to opto start, end relative to opto end]
 %           Negative for time before, positive for time after during window
 %           defined by walkTime for the trial to be included
+%       invAll - boolean for whether to condition on inversion of all
+%           specified conditions ie: ~(A AND B) (not ~A AND ~B)
 %   flipLegsLR - boolean for whether to flip legs left right
 %   pDataPath - path to folder containing pData files
+%   pDataFNames - cell array of pData file names or [] if select through
+%       GUI
 %   saveFileDir - full path to folder in which to save output file
 %   
 % OUTPUTS:
@@ -45,9 +49,13 @@
 %       backwards
 %   4/12/24 - HHY - remove outliers before computing mean, for non-circular
 %       parameters
+%   4/19/24 - HHY - conditioning changed to fictracSmo instead of
+%       fictracProc, add pDataFNames
+%   4/22/24 - HHY - add invAll to conditioning, change conditioning back to
+%       fictracProc
 %
 function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
-    cond, flipLegsLR, pDataPath, saveFileDir)
+    cond, flipLegsLR, pDataPath, pDataFNames, saveFileDir)
 
     NUM_LEGS = 6;
 
@@ -66,8 +74,12 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
     circStepParams = {'stepDirections'};
     
     % prompt user to select pData files
-    [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
-        'Select pData files', pDataPath, 'MultiSelect', 'on');
+    if isempty(pDataFNames)
+        [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
+            'Select pData files', pDataPath, 'MultiSelect', 'on');
+    else
+        pDataDirPath = pDataPath;
+    end
     
     % if only 1 pData file selected, not cell array; make sure loop still
     %  works 
@@ -153,7 +165,7 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
         end
 
         % check if this pData file has legSteps, opto, 
-        %  fictracProc structs, if not, skip
+        %  fictracSmo structs, if not, skip
         if (~any(strcmpi(pDatVarsNames, 'legSteps')) || ...
                 ~any(strcmpi(pDatVarsNames, 'opto')) || ...
                 ~any(strcmpi(pDatVarsNames, 'fictracProc')))
@@ -166,7 +178,8 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
         end
 
         % load data
-        load(pDataFullPath, 'legSteps', 'opto', 'visstim', 'fictracProc');
+        load(pDataFullPath, 'legSteps', 'opto', 'visstim', ...
+            'fictracProc', 'fictracSmo');
 
         
 
@@ -233,12 +246,15 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                     end
 
                     % logical into fictrac for cond time
-                    ftLog = (fictracProc.t>=thisCondStartTime) & ...
-                        (fictracProc.t<=thisCondEndTime);
+%                     ftLog = (fictracProc.t>=thisCondStartTime) & ...
+%                         (fictracProc.t<=thisCondEndTime);
+                    ftLog = (fictracSmo.t>=thisCondStartTime) & ...
+                        (fictracSmo.t<=thisCondEndTime);
 
                     % condition on step walking forward/backwards
                     if (strcmpi(cond.whichParam{k}, 'stepFwdBool'))
-                        thisTime = fictracProc.t(ftLog);
+%                         thisTime = fictracProc.t(ftLog);
+                        thisTime = fictracSmo.t(ftLog);
                         thisFwdLog = getStepFwdLogical(legSteps, thisTime,...
                             cond.legs{k});
                         if ~(eval(cond.cond{k})) % if target is false, invert
@@ -249,12 +265,18 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                         % if forward walking met for all time points
                         thisCondMet = all(thisLog);
                     else % condition on FicTrac parameter
+%                         % the FicTrac parameter to condition on
+%                         thisCondParam = fictracProc.(cond.whichParam{k});
+%     
+%                         % FicTrac parameter values during this time
+%                         ftLog = (fictracProc.t>=thisCondStartTime) & ...
+%                             (fictracProc.t<=thisCondEndTime);
                         % the FicTrac parameter to condition on
-                        thisCondParam = fictracProc.(cond.whichParam{k});
+                        thisCondParam = fictracSmo.(cond.whichParam{k});
     
                         % FicTrac parameter values during this time
-                        ftLog = (fictracProc.t>=thisCondStartTime) & ...
-                            (fictracProc.t<=thisCondEndTime);
+                        ftLog = (fictracSmo.t>=thisCondStartTime) & ...
+                            (fictracSmo.t<=thisCondEndTime);
                         thisFTVal = thisCondParam(ftLog);
     
                         % check if criteria met
@@ -268,6 +290,11 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                     % as soon as one condition is false, this will always
                     %  be false
                     meetsCond = meetsCond && thisCondMet; 
+                end
+
+                % if invert all conditioning
+                if (cond.invAll)
+                    meetsCond = ~meetsCond;
                 end
             end
 
@@ -501,8 +528,8 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                     % check that there's data, otherwise, will leave value
                     %  as NaN
                     if ~isempty(thisStanceVal)
-                        % remove outliers
-                        thisStanceVal = rmoutliers(thisStanceVal);
+%                         % remove outliers
+%                         thisStanceVal = rmoutliers(thisStanceVal);
 
                         legStepsOptoMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisStanceVal);
@@ -513,8 +540,8 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                     end
 
                     if ~isempty(thisSwingVal)
-                        % remove outliers
-                        thisSwingVal = rmoutliers(thisSwingVal);
+%                         % remove outliers
+%                         thisSwingVal = rmoutliers(thisSwingVal);
 
                         legStepsOptoMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisSwingVal);
