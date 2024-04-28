@@ -9,6 +9,7 @@
 % INPUTS:
 %   datDir - directory with output files
 %   whichParam - which step parameter to plot
+%   whichPhase - which step phase ('stance' or 'swing')
 %   durs - which duration conditions to plot
 %   NDs - which NDs to plot
 %   yScale - scale for plots, as [min max]

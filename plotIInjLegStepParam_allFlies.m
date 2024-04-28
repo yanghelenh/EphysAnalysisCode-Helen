@@ -11,6 +11,7 @@
 % INPUTS:
 %   datDir - directory with output files
 %   whichParam - which step parameter to plot
+%   whichPhase - which step phase to plot ('stance' or 'swing')
 %   durs - which duration conditions to plot
 %   amps - which IInj amplitudes to plot
 %   yScale - scale for plots, as [min max]
