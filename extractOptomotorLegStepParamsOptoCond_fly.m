@@ -9,7 +9,8 @@
 % Saves output file with name defined by first pData file (without trial #)
 % 
 % INPUTS:
-%   vels - vector of all optomotor stimulus velocities to consider
+%   vels - vector of all optomotor stimulus velocities to consider. If 
+%       vels = 0, combine all velocities
 %   NDs - vector of all NDs to consider
 %   trialWindow - length 2 vector where 1st element is time before
 %       optomotor movement starts to consider as trial and 2nd element is 
@@ -53,6 +54,8 @@
 %       fictracProc, add pDataFNames
 %   4/22/24 - HHY - add invAll to conditioning, change conditioning back to
 %       fictracProc
+%   4/29/24 - HHY - if vels = 0, trials are not split by vel and all are
+%       assigned vel value of 0, regardless of actual vel
 %
 function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
     cond, flipLegsLR, pDataPath, pDataFNames, saveFileDir)
@@ -265,12 +268,15 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                         % if forward walking met for all time points
                         thisCondMet = all(thisLog);
                     else % condition on FicTrac parameter
+                        % condition on FicTracProc
 %                         % the FicTrac parameter to condition on
 %                         thisCondParam = fictracProc.(cond.whichParam{k});
 %     
 %                         % FicTrac parameter values during this time
 %                         ftLog = (fictracProc.t>=thisCondStartTime) & ...
 %                             (fictracProc.t<=thisCondEndTime);
+                        
+                        % condition on FicTracSmo
                         % the FicTrac parameter to condition on
                         thisCondParam = fictracSmo.(cond.whichParam{k});
     
@@ -310,7 +316,13 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                 trialInd = [trialInd; j];
                 trialStartTime = [trialStartTime; thisTrialStartTime];
                 trialEndTime = [trialEndTime; thisTrialEndTime];
-                trialVel = [trialVel; visstim.rampCmdVels(j)];
+                % if vels = 0, then velocity is assigned value of 0,
+                %  regardless of actual
+                if (vels == 0)
+                    trialVel = [trialVel; 0];
+                else
+                    trialVel = [trialVel; visstim.rampCmdVels(j)];
+                end
                 
                 % this trial's ND
                 % add this trial's ND or -1 if opto not on

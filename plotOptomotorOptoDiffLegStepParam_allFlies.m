@@ -18,6 +18,7 @@
 %   yScale - scale for plots, as [min max]
 %   plotAvg - 'mean' or 'median' for which type of average across flies
 %   plotIndiv - boolean for whether to plot individual flies
+%   plotDiff - boolean for whether to plot difference from no stim condition
 %
 % OUTPUTS:
 %   none, but generates plot
@@ -26,9 +27,11 @@
 %
 % UPDATED:
 %   4/16/24 - HHY
+%   4/29/24 - HHY - add option to plot difference from no stim condition
 %
-function plotOptomotorOptoDiffLegStepParam_allFlies(...
-    datDir, whichParam, whichPhase,vels, NDs, yScale, plotAvg, plotIndiv)
+function allFliesMeans = plotOptomotorOptoDiffLegStepParam_allFlies(...
+    datDir, whichParam, whichPhase, vels, NDs, yScale, plotAvg, ...
+    plotIndiv, plotDiff)
 
     % legs to subplot indices
     % puts left legs on left, and front legs on top
@@ -37,7 +40,8 @@ function plotOptomotorOptoDiffLegStepParam_allFlies(...
     % circular step parameters
     circStepParams = {'stepDirections'};
 
-    % prompt user to select output files from saveLegStepParamByCond_fly()
+    % prompt user to select output files from 
+    %  extractOptomotorLegStepParamsOptoCond_fly()
     [outputFNames1, outputPath1] = uigetfile('*.mat', ...
         'Select set 1 Step Param files', ...
         datDir, 'MultiSelect', 'on');
@@ -74,11 +78,11 @@ function plotOptomotorOptoDiffLegStepParam_allFlies(...
             'condKeyVels', 'condKeyNDs');
 
         if (strcmpi(whichPhase, 'stance'))
-%             if(any(strcmpi(whichParam, circStepParams)))
-%                 thisMean = wrapTo360(legStepsOptoMeans.stance.(whichParam));
-%             else
+            if(any(strcmpi(whichParam, circStepParams)))
+                thisMean1 = wrapTo180(legStepsOptoMeans.stance.(whichParam));
+            else
                 thisMean1 = legStepsOptoMeans.stance.(whichParam);
-%             end
+            end
         elseif (strcmpi(whichPhase, 'swing'))
             thisMean1 = legStepsOptoMeans.swing.(whichParam);
         end
@@ -90,18 +94,49 @@ function plotOptomotorOptoDiffLegStepParam_allFlies(...
             'condKeyVels', 'condKeyNDs');
 
         if (strcmpi(whichPhase, 'stance'))
-%             if(any(strcmpi(whichParam, circStepParams)))
-%                 thisMean = wrapTo360(legStepsOptoMeans.stance.(whichParam));
-%             else
+            if(any(strcmpi(whichParam, circStepParams)))
+                thisMean2 = wrapTo180(legStepsOptoMeans.stance.(whichParam));
+            else
                 thisMean2 = legStepsOptoMeans.stance.(whichParam);
-%             end
+            end
         elseif (strcmpi(whichPhase, 'swing'))
             thisMean2 = legStepsOptoMeans.swing.(whichParam);
         end
 
+        % take difference
+        if(any(strcmpi(whichParam, circStepParams)) && strcmpi(whichPhase, 'stance'))
+            thisDiffMean = wrapTo180(thisMean2 - thisMean1);
+        else
+            thisDiffMean = thisMean2 - thisMean1;
+        end
+
+        % if we're plotting difference from no stim condition
+        if (plotDiff)
+            noStimInd = find(condKeyNDs == -1);
+            for j = 1:length(noStimInd)
+                thisVel = condKeyVels(noStimInd(j));
+                sameVelInd = find(condKeyVels == thisVel);
+
+                noStimMean = thisDiffMean(noStimInd(j),:);
+                for k = 1:length(sameVelInd)
+%                     thisMean(sameDurInd(k),:) = thisMean(sameDurInd(k),:) - ...
+%                         noStimMean;
+
+                    if(any(strcmpi(whichParam, circStepParams)))
+                        thisDiffMean(sameVelInd(k),:) = wrapTo180(...
+                            thisDiffMean(sameVelInd(k),:) - ...
+                            noStimMean); 
+                    else
+                        thisDiffMean(sameVelInd(k),:) = thisDiffMean(sameVelInd(k),:) - ...
+                            noStimMean;
+                    end
+                end
+            end
+        end
+
 
         % save means and SEMs for this fly
-        allFliesMeans = cat(3, allFliesMeans, thisMean2 - thisMean1);
+        allFliesMeans = cat(3, allFliesMeans, thisDiffMean);
     end
 
     % compute mean, median, SEM across all flies
@@ -140,12 +175,11 @@ function plotOptomotorOptoDiffLegStepParam_allFlies(...
 
     end
 
-%     % for plotting, if circular parameter and stance, wrap to 360
-%     if (strcmpi(whichPhase, 'stance') && any(strcmpi(legStepParam, circStepParams)))
-%         allFliesNormMeans = wrapTo360(allFliesNormMeans);
-%         meanAllFlies = wrapTo360(meanAllFlies);
-%         %medianAllFlies = wrapTo360(medianAllFlies);
-%     end
+    % for plotting, if circular parameter and stance, wrap to 180
+    if (strcmpi(whichPhase, 'stance') && any(strcmpi(whichParam, circStepParams)))
+        meanAllFlies = wrapTo180(meanAllFlies);
+        %medianAllFlies = wrapTo360(medianAllFlies);
+    end
 
     % get which conditions to plot (of specified durs and NDs)
     plotCondInd = [];

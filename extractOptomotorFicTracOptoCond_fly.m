@@ -53,6 +53,8 @@
 %       instead of using ceil, which was sensitive to very small changes in
 %       ifi
 %   4/22/24 - HHY - add invAll to conditioning, and pDataFNames to inputs
+%   4/30/24 - HHY - if vels = 0, trials are not split by vel and all are
+%       assigned vel value of 0, regardless of actual vel
 %
 function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
     cond, flipLR, pDataPath, pDataFNames, saveFileDir)
@@ -155,8 +157,16 @@ function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
         optomotorDur = zeros(numVels, 1);
         for j = 1:length(trialLength)
             ifi = median(diff(fictracProc.t));
-            thisVelDur = median(...
-                visstim.rampCmdDurs(visstim.rampCmdVels == vels(j)));
+
+            % if combining all velocities (vels = 0), assumes duration is
+            %  same across all of them
+            if (vels == 0)
+                thisVelDur = median(visstim.rampCmdDurs);
+            else
+                thisVelDur = median(...
+                    visstim.rampCmdDurs(visstim.rampCmdVels == vels(j)));
+            end
+
             trialLengthTime = thisVelDur + trialWindow(1) + trialWindow(2);
             trialLength(j) = round(trialLengthTime/ifi);
             optomotorDur(j) = thisVelDur;
@@ -225,21 +235,21 @@ function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
                         % if forward walking met for all time points
                         thisCondMet = all(thisLog);
                     else % condition on FicTrac parameter
-                        % condition on fictracProc
-                        % the FicTrac parameter to condition on
-                        thisCondParam = fictracProc.(cond.whichParam{k});
-    
-                        % FicTrac parameter values during this time
-                        ftLog = (fictracProc.t>=thisCondStartTime) & ...
-                            (fictracProc.t<=thisCondEndTime);
-
-                        % condition on fictracSmo
+%                         % condition on fictracProc
 %                         % the FicTrac parameter to condition on
-%                         thisCondParam = fictracSmo.(cond.whichParam{k});
+%                         thisCondParam = fictracProc.(cond.whichParam{k});
 %     
 %                         % FicTrac parameter values during this time
-%                         ftLog = (fictracSmo.t>=thisCondStartTime) & ...
-%                             (fictracSmo.t<=thisCondEndTime);
+%                         ftLog = (fictracProc.t>=thisCondStartTime) & ...
+%                             (fictracProc.t<=thisCondEndTime);
+
+                        % condition on fictracSmo
+                        % the FicTrac parameter to condition on
+                        thisCondParam = fictracSmo.(cond.whichParam{k});
+    
+                        % FicTrac parameter values during this time
+                        ftLog = (fictracSmo.t>=thisCondStartTime) & ...
+                            (fictracSmo.t<=thisCondEndTime);
 
                         thisFTVal = thisCondParam(ftLog);
     
@@ -273,8 +283,15 @@ function extractOptomotorFicTracOptoCond_fly(vels, NDs, trialWindow, ...
                     fictracProc.t, 1, 'last') ;
                 thisRampEndInd = find(visstim.rampEndTimes(j) <= ...
                     fictracProc.t, 1, 'last') ;
+
                 % get end index, based on velocity
-                thisVelInd = find(visstim.rampCmdVels(j) == vels);
+                % if vels = 0, pool across velocities
+                if (vels == 0)
+                    thisVelInd = 1;
+                else
+                    thisVelInd = find(visstim.rampCmdVels(j) == vels);
+                end
+
                 % if this velocity is not to be considered, skip this trial
                 if isempty(thisVelInd)
                     continue;
