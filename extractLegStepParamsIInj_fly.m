@@ -8,6 +8,8 @@
 %  after the stimulation) beyond move/not move and selects no stim periods
 %  as deliberate 'trials' during times of no IInj (specifically, the 
 %  middle). Also, operates on all step parameters instead of one at a time.
+% Option to remove outliers before computing mean/std dev/SEM, only on
+%  non-circular parameters
 % Select all pData files for 1 fly through GUI
 % Saves output file with name defined by first pData file (without trial #)
 % 
@@ -32,7 +34,11 @@
 %       cond - cell array of strings to condition on, for eval(), of size
 %           numDurs * numAmps + 1; order: each dur for each amp
 %   flipLegsLR - boolean for whether to flip legs left right
+%   outThresh - threshold in number of MAD away to consider as outlier 
+%       [] for no outlier removal 
 %   pDataPath - path to folder containing pData files
+%   pDataFNames - cell array of pData file names or [] if select through
+%       GUI
 %   saveFileDir - full path to folder in which to save output file
 %   
 % OUTPUTS:
@@ -45,9 +51,13 @@
 %   8/24/23 - HHY - fix circular stats (forgot to convert to radians)
 %   8/26/23 - HHY - fix bug in inverting step parameter values when
 %       flipping left/right
+%   5/7/24 - HHY - add abs val version of stepXLengths, stepYLengths; add
+%       option for outlier removal; minWalkFwd on fictracSmo; add
+%       pDataFNames as input
 %
 function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
-    minWalkFwd, cond, flipLegsLR, pDataPath, saveFileDir)
+    minWalkFwd, cond, flipLegsLR, outThresh, pDataPath, pDataFNames, ...
+    saveFileDir)
 
     NUM_LEGS = 6;
 
@@ -55,7 +65,7 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     stepParamNames = {'stepLengths', 'stepXLengths',...
         'stepYLengths', 'stepDirections', 'stepDurations', 'stepSpeeds',...
         'stepVelX', 'stepVelY', 'stepAEPX', 'stepAEPY', 'stepPEPX', ...
-        'stepPEPY'};
+        'stepPEPY', 'stepXLengthsAbs', 'stepYLengthsAbs'};
 
     % all the step parameters where values need to be * -1 when flipping
     %  legs left right
@@ -66,8 +76,12 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     circStepParams = {'stepDirections'};
     
     % prompt user to select pData files
-    [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
-        'Select pData files', pDataPath, 'MultiSelect', 'on');
+    if isempty(pDataFNames)
+        [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
+            'Select pData files', pDataPath, 'MultiSelect', 'on');
+    else
+        pDataDirPath = pDataPath;
+    end
     
     % if only 1 pData file selected, not cell array; make sure loop still
     %  works 
@@ -161,15 +175,22 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
         %  fictracProc structs, if not, skip
         if (~any(strcmpi(pDatVarsNames, 'legSteps')) || ...
                 ~any(strcmpi(pDatVarsNames, 'iInj')) || ...
-                ~any(strcmpi(pDatVarsNames, 'fictracProc')))
+                ~any(strcmpi(pDatVarsNames, 'fictracSmo')))
             continue;
         end
 
         % load data
-        load(pDataFullPath, 'legSteps', 'iInj', 'fictracProc', ...
+        load(pDataFullPath, 'legSteps', 'iInj', 'fictracSmo', ...
             'stanceStepParams', 'swingStepParams');
 
-        
+        % get stepXLengthsAbs and stepYLengthsAbs
+        legSteps.stepXLengthsAbs = abs(legSteps.stepXLengths);
+        stanceStepParams.stepXLengthsAbs = abs(stanceStepParams.stepXLengths);
+        swingStepParams.stepXLengthsAbs = abs(swingStepParams.stepXLengths);
+
+        legSteps.stepYLengthsAbs = abs(legSteps.stepYLengths);
+        stanceStepParams.stepYLengthsAbs = abs(stanceStepParams.stepYLengths);
+        swingStepParams.stepYLengthsAbs = abs(swingStepParams.stepYLengths); 
 
         % get matching b/w corresponding left and right legs
         rightLegInd = find(contains(legSteps.legIDs.names, 'R'));
@@ -204,9 +225,9 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
             thisEndTime = iInj.endTimes(j) + walkTime(2);
 
             % fwd velocity during this time
-            ftLog = (fictracProc.t>=thisStartTime) & ...
-                (fictracProc.t<=thisEndTime);
-            thisFwdVel = fictracProc.fwdVel(ftLog);
+            ftLog = (fictracSmo.t>=thisStartTime) & ...
+                (fictracSmo.t<=thisEndTime);
+            thisFwdVel = fictracSmo.fwdVel(ftLog);
 
             % if this trial is valid (fwd vel not below min), record trial
             %  info
@@ -253,9 +274,9 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
             thisEndTime = thisTrialEndTime + walkTime(2);
 
             % fwd velocity during this time
-            ftLog = (fictracProc.t>=thisStartTime) & ...
-                (fictracProc.t<=thisEndTime);
-            thisFwdVel = fictracProc.fwdVel(ftLog);
+            ftLog = (fictracSmo.t>=thisStartTime) & ...
+                (fictracSmo.t<=thisEndTime);
+            thisFwdVel = fictracSmo.fwdVel(ftLog);
 
             % if this trial is valid (fwd vel not below min), record trial
             %  info
@@ -527,6 +548,13 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                     % check that there's data, otherwise, will leave value
                     %  as NaN
                     if ~isempty(thisStanceVal)
+
+                        % outlier removal
+                        if ~isempty(outThresh)
+                            thisStanceVal = madRmOutliers(...
+                                thisStanceVal, outThresh);
+                        end
+
                         legStepsIInjMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisStanceVal);
                         legStepsIInjStdDev.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
@@ -536,6 +564,13 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
                     end
 
                     if ~isempty(thisSwingVal)
+
+                        % outlier removal
+                        if ~isempty(outThresh)
+                            thisSwingVal = madRmOutliers(...
+                                thisSwingVal, outThresh);
+                        end
+
                         legStepsIInjMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisSwingVal);
                         legStepsIInjStdDev.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
@@ -553,6 +588,6 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     save(saveFileFullName, 'legStepsIInjAll', 'legStepsIInjMeans', ...
         'legStepsIInjStdDev', 'legStepsIInjSEM', 'cond', 'condKeyDurs', ...
         'condKeyAmps', 'iInjTime', 'walkTime', 'minWalkFwd', ...
-        'flipLegsLR', '-v7.3');
+        'flipLegsLR', 'outThresh', '-v7.3');
 
 end

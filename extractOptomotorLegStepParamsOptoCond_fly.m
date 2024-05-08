@@ -5,6 +5,8 @@
 % This is a variant of extractLegStepParamsOptoCond_fly() with the addition
 %  of optomotor visual stimuli. Works like conditioning
 %  in extractOptomotorFicTracOptoCond_fly()
+% Option to remove outliers before computing mean/std dev/SEM, only on
+%  non-circular parameters
 % Select all pData files for 1 fly through GUI
 % Saves output file with name defined by first pData file (without trial #)
 % 
@@ -34,6 +36,8 @@
 %       invAll - boolean for whether to condition on inversion of all
 %           specified conditions ie: ~(A AND B) (not ~A AND ~B)
 %   flipLegsLR - boolean for whether to flip legs left right
+%   outThresh - threshold in number of MAD away to consider as outlier 
+%       [] for no outlier removal 
 %   pDataPath - path to folder containing pData files
 %   pDataFNames - cell array of pData file names or [] if select through
 %       GUI
@@ -52,13 +56,14 @@
 %       parameters
 %   4/19/24 - HHY - conditioning changed to fictracSmo instead of
 %       fictracProc, add pDataFNames
-%   4/22/24 - HHY - add invAll to conditioning, change conditioning back to
-%       fictracProc
+%   4/22/24 - HHY - add invAll to conditioning
 %   4/29/24 - HHY - if vels = 0, trials are not split by vel and all are
 %       assigned vel value of 0, regardless of actual vel
+%   5/7/24 - HHY - add abs val version of stepXLengths, stepYLengths; add
+%       option for outlier removal
 %
 function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
-    cond, flipLegsLR, pDataPath, pDataFNames, saveFileDir)
+    cond, flipLegsLR, outThresh, pDataPath, pDataFNames, saveFileDir)
 
     NUM_LEGS = 6;
 
@@ -66,7 +71,7 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
     stepParamNames = {'stepLengths', 'stepXLengths',...
         'stepYLengths', 'stepDirections', 'stepDurations', 'stepSpeeds',...
         'stepVelX', 'stepVelY', 'stepAEPX', 'stepAEPY', 'stepPEPX', ...
-        'stepPEPY'};
+        'stepPEPY', 'stepXLengthsAbs', 'stepYLengthsAbs'};
 
     % all the step parameters where values need to be * -1 when flipping
     %  legs left right
@@ -184,7 +189,9 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
         load(pDataFullPath, 'legSteps', 'opto', 'visstim', ...
             'fictracProc', 'fictracSmo');
 
-        
+        % get stepXLengthsAbs and stepYLengthsAbs
+        legSteps.stepXLengthsAbs = abs(legSteps.stepXLengths);
+        legSteps.stepYLengthsAbs = abs(legSteps.stepYLengths);
 
         % get matching b/w corresponding left and right legs
         rightLegInd = find(contains(legSteps.legIDs.names, 'R'));
@@ -540,8 +547,12 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                     % check that there's data, otherwise, will leave value
                     %  as NaN
                     if ~isempty(thisStanceVal)
-%                         % remove outliers
-%                         thisStanceVal = rmoutliers(thisStanceVal);
+
+                        % outlier removal
+                        if ~isempty(outThresh)
+                            thisStanceVal = madRmOutliers(...
+                                thisStanceVal, outThresh);
+                        end
 
                         legStepsOptoMeans.stance.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisStanceVal);
@@ -552,8 +563,12 @@ function extractOptomotorLegStepParamsOptoCond_fly(vels, NDs, trialWindow, ...
                     end
 
                     if ~isempty(thisSwingVal)
-%                         % remove outliers
-%                         thisSwingVal = rmoutliers(thisSwingVal);
+
+                        % outlier removal
+                        if ~isempty(outThresh)
+                            thisSwingVal = madRmOutliers(...
+                                thisSwingVal, outThresh);
+                        end
 
                         legStepsOptoMeans.swing.(stepParamNames{k})(i,legSteps.legIDs.ind(j)) = ...
                             mean(thisSwingVal);
