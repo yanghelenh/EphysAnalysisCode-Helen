@@ -1,11 +1,11 @@
 %% ANOVA tests for IInj
 
 datDir = '/Users/hyang/Dropbox (HMS)/EphysAnalysis-Helen/AnalyzedData';
-whichParam = 'stepDirections';
+whichParam = 'stepXLengths';
 whichPhase = 'stance';
 durs = 1;
 amps = [-75 100];
-yScale = [-20 20];
+yScale = [-0.06 0.06];
 plotAvg = 'mean';
 plotIndiv = true;
 plotDiff = true;

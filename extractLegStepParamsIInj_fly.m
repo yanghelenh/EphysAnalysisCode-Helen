@@ -54,6 +54,7 @@
 %   5/7/24 - HHY - add abs val version of stepXLengths, stepYLengths; add
 %       option for outlier removal; minWalkFwd on fictracSmo; add
 %       pDataFNames as input
+%   5/8/24 - HHY - minWalkFwd back on fictracProc
 %
 function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
     minWalkFwd, cond, flipLegsLR, outThresh, pDataPath, pDataFNames, ...
@@ -175,12 +176,12 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
         %  fictracProc structs, if not, skip
         if (~any(strcmpi(pDatVarsNames, 'legSteps')) || ...
                 ~any(strcmpi(pDatVarsNames, 'iInj')) || ...
-                ~any(strcmpi(pDatVarsNames, 'fictracSmo')))
+                ~any(strcmpi(pDatVarsNames, 'fictracProc')))
             continue;
         end
 
         % load data
-        load(pDataFullPath, 'legSteps', 'iInj', 'fictracSmo', ...
+        load(pDataFullPath, 'legSteps', 'iInj', 'fictracProc', ...
             'stanceStepParams', 'swingStepParams');
 
         % get stepXLengthsAbs and stepYLengthsAbs
@@ -225,9 +226,9 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
             thisEndTime = iInj.endTimes(j) + walkTime(2);
 
             % fwd velocity during this time
-            ftLog = (fictracSmo.t>=thisStartTime) & ...
-                (fictracSmo.t<=thisEndTime);
-            thisFwdVel = fictracSmo.fwdVel(ftLog);
+            ftLog = (fictracProc.t>=thisStartTime) & ...
+                (fictracProc.t<=thisEndTime);
+            thisFwdVel = fictracProc.fwdVel(ftLog);
 
             % if this trial is valid (fwd vel not below min), record trial
             %  info
@@ -274,9 +275,9 @@ function extractLegStepParamsIInj_fly(amps, durs, iInjTime, walkTime, ...
             thisEndTime = thisTrialEndTime + walkTime(2);
 
             % fwd velocity during this time
-            ftLog = (fictracSmo.t>=thisStartTime) & ...
-                (fictracSmo.t<=thisEndTime);
-            thisFwdVel = fictracSmo.fwdVel(ftLog);
+            ftLog = (fictracProc.t>=thisStartTime) & ...
+                (fictracProc.t<=thisEndTime);
+            thisFwdVel = fictracProc.fwdVel(ftLog);
 
             % if this trial is valid (fwd vel not below min), record trial
             %  info
