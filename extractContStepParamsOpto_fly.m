@@ -18,6 +18,10 @@
 %   trialWindow - length 2 vector where 1st element is time before opto
 %       starts to consider as trial and 2nd element is time after opto stim
 %       ends to consider as part of the trial
+%   diffWindow - length 2 vector defining window over which to take mean
+%       for each trial and subtract from whole trial (i.e. zero to this
+%       region); [start end], both as time before opto starts; [] if not
+%       computing difference
 %   walkTime - length 2 vector where 1st element is time before opto starts
 %       and 2nd element is time after opto ends where the fly has to be
 %       walking for the steps during the trial to be included
@@ -25,6 +29,8 @@
 %       during window defined by walkTime for the trial to be included
 %   flipLegsLR - boolean for whether to flip legs left right
 %   pDataPath - path to folder containing pData files
+%   pDataFNames - cell array of pData file names or [] if select through
+%       GUI
 %   saveFileDir - full path to folder in which to save output file
 %   
 % OUTPUTS:
@@ -36,9 +42,12 @@
 %   8/6/23 - HHY
 %   8/18/23 - HHY - fix bug in inverting values of step parameters when
 %       flipLegsLR flagged
+%   5/30/24 - HHY - add pDataFNames as input. Add diffWindow, option to
+%       take difference from mean during some time window of trial
 %
-function extractContStepParamsOpto_fly(durs, NDs, trialWindow, walkTime, ...
-    minWalkFwd, flipLegsLR, pDataPath, saveFileDir)
+function extractContStepParamsOpto_fly(durs, NDs, trialWindow, ...
+    diffWindow, walkTime, minWalkFwd, flipLegsLR, pDataPath, ...
+    pDataFNames, saveFileDir)
 
     NUM_LEGS = 6;
     lrLegInd = [4 5 6 1 2 3]; % indices when flipping legs left/right
@@ -55,8 +64,12 @@ function extractContStepParamsOpto_fly(durs, NDs, trialWindow, walkTime, ...
     circStepParams = {'stepDirection'};
     
     % prompt user to select pData files
-    [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
-        'Select pData files', pDataPath, 'MultiSelect', 'on');
+    if isempty(pDataFNames)
+        [pDataFNames, pDataDirPath] = uigetfile('*.mat', ...
+            'Select pData files', pDataPath, 'MultiSelect', 'on');
+    else
+        pDataDirPath = pDataPath;
+    end
     
     % if only 1 pData file selected, not cell array; make sure loop still
     %  works 
@@ -165,31 +178,82 @@ function extractContStepParamsOpto_fly(durs, NDs, trialWindow, walkTime, ...
                 thisTrialEndInd = thisTrialStartInd + ...
                     trialLength(thisDurInd) - 1;
 
+                % get diffWindow indices
+                if ~isempty(diffWindow)
+                    thisTrialDiffStartTime = opto.stimStartTimes(j) - ...
+                        diffWindow(1);
+                    thisTrialDiffStartInd = find(thisTrialDiffStartTime >= ...
+                    legStepsCont.t, 1, 'last');
+                    thisTrialDiffEndTime = opto.stimStartTimes(j) - ...
+                        diffWindow(2);
+                    thisTrialDiffEndInd = find(thisTrialDiffEndTime >= ...
+                    legStepsCont.t, 1, 'last');
+                end
+
                 
                 if (thisTrialStartInd <= length(legStepsCont.t)) && ...
                         (thisTrialEndInd <= length(legStepsCont.t))
                     % add this trial's step param to running tracker of trials
                     for k = 1:length(stepParamNames)
-                        % flip leg index assignments
-                         if (flipLegsLR)
-                            % those parameters that need to be value inverted
-                            if any(strcmpi(stepParamNames{k}, flipStepParams))
-                                legStepsContOpto(thisDurInd).(stepParamNames{k}) = cat(3,...
-                                    legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
-                                    legStepsCont.(stepParamNames{k})(...
-                                    thisTrialStartInd:thisTrialEndInd,lrLegInd) * -1);
-                            else
-                                legStepsContOpto(thisDurInd).(stepParamNames{k}) = cat(3,...
-                                    legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
-                                    legStepsCont.(stepParamNames{k})(...
-                                    thisTrialStartInd:thisTrialEndInd,lrLegInd));
-                            end
-                         else
-                            legStepsContOpto(thisDurInd).(stepParamNames{k}) = cat(3,...
-                                legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
-                                legStepsCont.(stepParamNames{k})(...
-                                thisTrialStartInd:thisTrialEndInd,:));
-                         end
+                        % absolute parameter value
+                        if isempty(diffWindow)
+                            % flip leg index assignments
+                             if (flipLegsLR)
+                                % those parameters that need to be value inverted
+                                if any(strcmpi(stepParamNames{k}, flipStepParams))
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd) * -1;
+                                else
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd);
+                                end
+                             else
+                                thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                    thisTrialStartInd:thisTrialEndInd,:);
+                             end
+                        % parameter value as difference from mean during diffWindow     
+                        else
+                            % flip leg index assignments
+                             if (flipLegsLR)
+                                % those parameters that need to be value inverted
+                                if any(strcmpi(stepParamNames{k}, flipStepParams))
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd) * -1;
+
+                                    % get mean value during diff window
+                                    %  subtract from trial value
+                                    thisDiffWin = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialDiffStartInd:thisTrialDiffEndInd,lrLegInd) * -1;
+                                    thisDiffMean = mean(thisDiffWin);
+                                    thisTrialVal = thisTrialVal - thisDiffMean;
+                                else
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd);
+
+                                    % get mean value during diff window
+                                    %  subtract from trial value
+                                    thisDiffWin = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialDiffStartInd:thisTrialDiffEndInd,lrLegInd);
+                                    thisDiffMean = mean(thisDiffWin);
+                                    thisTrialVal = thisTrialVal - thisDiffMean;
+                                end
+                             else
+                                thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                    thisTrialStartInd:thisTrialEndInd,:);
+
+                                    % get mean value during diff window
+                                    %  subtract from trial value
+                                    thisDiffWin = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialDiffStartInd:thisTrialDiffEndInd,:);
+                                    thisDiffMean = mean(thisDiffWin);
+                                    thisTrialVal = thisTrialVal - thisDiffMean;
+                             end
+                        end
+                        % add to tracker
+                        legStepsContOpto(thisDurInd).(stepParamNames{k}) = ...
+                            cat(3,...
+                            legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
+                            thisTrialVal);
                     end
                     % add this trial's ND
                     legStepsContOpto(thisDurInd).whichND = [...
@@ -235,31 +299,82 @@ function extractContStepParamsOpto_fly(durs, NDs, trialWindow, walkTime, ...
                 thisTrialEndInd = thisTrialStartInd + ...
                     trialLength(thisDurInd) - 1;
 
+                % get diffWindow indices
+                if ~isempty(diffWindow)
+                    thisTrialDiffStartTime = thisTrialStartTime + ...
+                        trialWindow(1) - diffWindow(1);
+                    thisTrialDiffStartInd = find(thisTrialDiffStartTime >= ...
+                    legStepsCont.t, 1, 'last');
+                    thisTrialDiffEndTime = thisTrialStartTime + ...
+                        trialWindow(1) - diffWindow(2);
+                    thisTrialDiffEndInd = find(thisTrialDiffEndTime >= ...
+                    legStepsCont.t, 1, 'last');
+                end
+
 
                 if (thisTrialStartInd <= length(legStepsCont.t)) && ...
                         (thisTrialEndInd <= length(legStepsCont.t))
                     % add this trial's step param to running tracker of trials
                     for k = 1:length(stepParamNames)
-                        % flip leg index assignments
-                         if (flipLegsLR)
-                            % those parameters that need to be value inverted
-                            if any(strcmpi(stepParamNames{k}, flipStepParams))
-                                legStepsContOpto(thisDurInd).(stepParamNames{k}) = cat(3,...
-                                    legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
-                                    legStepsCont.(stepParamNames{k})(...
-                                    thisTrialStartInd:thisTrialEndInd,lrLegInd) * -1);
-                            else
-                                legStepsContOpto(thisDurInd).(stepParamNames{k}) = cat(3,...
-                                    legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
-                                    legStepsCont.(stepParamNames{k})(...
-                                    thisTrialStartInd:thisTrialEndInd,lrLegInd));
-                            end
-                         else
-                            legStepsContOpto(thisDurInd).(stepParamNames{k}) = cat(3,...
-                                legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
-                                legStepsCont.(stepParamNames{k})(...
-                                thisTrialStartInd:thisTrialEndInd,:));
-                         end
+                        % absolute parameter value
+                        if isempty(diffWindow)
+                            % flip leg index assignments
+                             if (flipLegsLR)
+                                % those parameters that need to be value inverted
+                                if any(strcmpi(stepParamNames{k}, flipStepParams))
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd) * -1;
+                                else
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd);
+                                end
+                             else
+                                thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                    thisTrialStartInd:thisTrialEndInd,:);
+                             end
+                        % parameter value as difference from mean during diffWindow     
+                        else
+                            % flip leg index assignments
+                             if (flipLegsLR)
+                                % those parameters that need to be value inverted
+                                if any(strcmpi(stepParamNames{k}, flipStepParams))
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd) * -1;
+
+                                    % get mean value during diff window
+                                    %  subtract from trial value
+                                    thisDiffWin = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialDiffStartInd:thisTrialDiffEndInd,lrLegInd) * -1;
+                                    thisDiffMean = mean(thisDiffWin);
+                                    thisTrialVal = thisTrialVal - thisDiffMean;
+                                else
+                                    thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialStartInd:thisTrialEndInd,lrLegInd);
+
+                                    % get mean value during diff window
+                                    %  subtract from trial value
+                                    thisDiffWin = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialDiffStartInd:thisTrialDiffEndInd,lrLegInd);
+                                    thisDiffMean = mean(thisDiffWin);
+                                    thisTrialVal = thisTrialVal - thisDiffMean;
+                                end
+                             else
+                                thisTrialVal = legStepsCont.(stepParamNames{k})(...
+                                    thisTrialStartInd:thisTrialEndInd,:);
+
+                                    % get mean value during diff window
+                                    %  subtract from trial value
+                                    thisDiffWin = legStepsCont.(stepParamNames{k})(...
+                                        thisTrialDiffStartInd:thisTrialDiffEndInd,:);
+                                    thisDiffMean = mean(thisDiffWin);
+                                    thisTrialVal = thisTrialVal - thisDiffMean;
+                             end
+                        end
+                        % add to tracker
+                        legStepsContOpto(thisDurInd).(stepParamNames{k}) = ...
+                            cat(3,...
+                            legStepsContOpto(thisDurInd).(stepParamNames{k}), ...
+                            thisTrialVal);
                     end
                     % add this trial's ND
                     legStepsContOpto(thisDurInd).whichND = [...
@@ -325,7 +440,7 @@ function extractContStepParamsOpto_fly(durs, NDs, trialWindow, walkTime, ...
     saveFileFullName = [saveFileDir filesep flyName '_legStepsContOpto.mat'];
     save(saveFileFullName, 'legStepsContOpto', 'legStepsContOptoMean', ...
         'legStepsContOptoStdDev', 'legStepsContOptoSEM', 'trialWindow', ...
-        'walkTime', 'minWalkFwd', 'flipLegsLR', 'durs', 'NDs', ...
+        'diffWindow', 'walkTime', 'minWalkFwd', 'flipLegsLR', 'durs', 'NDs', ...
         'trialTimes', '-v7.3');
 
 end

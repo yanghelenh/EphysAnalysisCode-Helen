@@ -70,7 +70,8 @@ function plotAvgContParamEphys_fly(datDir, avg, indivFlies, numBins, ...
 %         ephysValsNorm = ephysVals;
 
         if (contains(outName, '220907_fly01_yawVel') || ...
-                contains(outName, '220907_fly01_stepDirection'))
+                contains(outName, '220907_fly01_stepDirection') || ...
+                contains(outName, '220907_fly01_slideVel'))
             behVals1D = behVals1D * -1;
         end
 

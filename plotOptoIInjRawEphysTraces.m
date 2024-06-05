@@ -17,6 +17,7 @@
 vmScale = [-70 -35]; % voltage scale
 stimScale = [-0.1 1.1]; % scale for stimulation
 tScale = [148.8 153.8]; % time scale
+tScale = [172 176]; % time scale
 
 %% other parameters
 dsRate = 5000; % downsampled aquisition rate, in Hz
